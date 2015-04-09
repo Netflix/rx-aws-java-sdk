@@ -4,6 +4,7 @@ import java.io.ByteArrayInputStream;
 import java.net.URLEncoder;
 import java.util.List;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
@@ -68,6 +69,15 @@ abstract public class AmazonRxNettyHttpClient extends AmazonWebServiceClient {
 
   protected static final List<Unmarshaller<AmazonServiceException,Node>> EXCEPTION_UNMARSHALERS =
     new ArrayList<Unmarshaller<AmazonServiceException,Node>>();
+
+  protected String mkToken(String... tokens) {
+    if (tokens.length == 1)
+      return tokens[0];
+    else if (Arrays.stream(tokens).anyMatch(t -> { return t != null; }))
+      return Arrays.stream(tokens).reduce((s1, s2) -> s1 + "|" + s2).get();
+    else
+      return null;
+  }
 
   static {
     try {
