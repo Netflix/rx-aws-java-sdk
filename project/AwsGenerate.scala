@@ -206,6 +206,22 @@ import rx.Observable;
 
 public class <<CLASSNAME>> extends AmazonRxNettyHttpClient {
 
+  public <<CLASSNAME>>() {
+    super();
+  }
+
+  public <<CLASSNAME>>(AWSCredentialsProvider credProvider) {
+    super(credProvider);
+  }
+
+  public <<CLASSNAME>>(ClientConfiguration config) {
+    super(config);
+  }
+
+  public <<CLASSNAME>>(AWSCredentialsProvider credProvider, ClientConfiguration config) {
+    super(credProvider, config);
+  }
+
   @Override
   protected String getDefaultEndpoint() { return "<<ENDPOINT>>"; }
 """
