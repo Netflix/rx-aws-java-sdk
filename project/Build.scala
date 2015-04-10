@@ -13,7 +13,6 @@ object MainBuild extends Build {
   lazy val buildSettings = baseSettings ++ Seq(
             organization := BuildSettings.organization,
             scalaVersion := Dependencies.Versions.scala,
-            javacOptions ++= Seq("-source", "1.8", "-target", "1.8", "-Xlint"),
               crossPaths := false,
            sourcesInBase := false,
         autoScalaLibrary := false,
