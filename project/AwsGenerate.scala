@@ -97,16 +97,22 @@ object AwsGenerate {
     val cls = c.cinfo.load
     cls.getDeclaredMethods
     .filter(_.getModifiers == 1)
-    .filter(_.getParameterTypes.size == 1)
-    .filter(_.getParameterTypes.head.getSimpleName.endsWith("Request"))
     .filterNot(m => ignore.contains(m.getName))
-    .sortBy(_.getName)
+    .filter(m => {
+      (m.getParameterTypes.size == 0 && m.getReturnType.getSimpleName.endsWith("Result")) ||
+      (m.getParameterTypes.size == 1 && m.getParameterTypes.head.getSimpleName.endsWith("Request"))
+    })
+    .groupBy(_.getName)
+    .toList
+    .filter(_._2.map(_.getParameterTypes.size).sum > 0)
+    .sortBy(_._1)
 //.filter(_.getName == "describeInstances")
 //.filter(_.getName == "releaseAddress")
-    .flatMap(m => mkMethod(c, m))
+    .flatMap({ case (n, ms) => mkMethod(c, ms.toList) })
   }
 
-  def mkMethod(c: ClientInfo, method: Method): Option[String] = {
+  def mkMethod(c: ClientInfo, methods: List[Method]): Option[String] = {
+    val method :: remainder = methods.sortBy(_.getParameterTypes.size).reverse
     val methodName = method.getName
     val requestType = method.getParameterTypes.head
     val strRequestType = requestType.getSimpleName
@@ -117,16 +123,14 @@ object AwsGenerate {
     }
 
     val pagination = Pagination(resultType, requestType)
-    val strWrappedResultType = pagination.size match {
-      case 0 if strResultType == "Void" => "VoidServiceResult"
-      case 0                            => s"SimpleServiceResult<${strResultType}>"
-      case _                            => s"PaginatedServiceResult<${strResultType}>"
-    }
 
     val content = {
-      if (pagination.size > 0) paginatedTemplate
-      else if (strResultType == "Void") voidTemplate
-      else simpleTemplate
+      if (pagination.size > 0)
+        remainder.headOption.map(_ => paginatedTemplateNoArgs).getOrElse("") + paginatedTemplate
+      else if (strResultType == "Void")
+        remainder.headOption.map(_ => voidTemplateNoArgs).getOrElse("") + voidTemplate
+      else
+        remainder.headOption.map(_ => simpleTemplateNoArgs).getOrElse("") + simpleTemplate
     }
 
     Some(
@@ -202,7 +206,7 @@ import com.amazonaws.services.*;
 import <<PKG>>.model.*;
 import <<PKG>>.model.transform.*;
 
-import rx.Observable;
+import iep.rx.Observable;
 
 public class <<CLASSNAME>> extends AmazonRxNettyHttpClient {
 
@@ -235,6 +239,12 @@ public class <<CLASSNAME>> extends AmazonRxNettyHttpClient {
   def mkUpdatePagination(pagination: List[Pagination]): String = {
     pagination.map(p => s"        request.${p.setterName}(result.${p.getterName}());").mkString("\n")
   }
+
+  val paginatedTemplateNoArgs = """
+  public Observable<PaginatedServiceResult<<<RESULT_TYPE>>>> <<METHOD_NAME>>() {
+    return <<METHOD_NAME>>(new <<REQUEST_TYPE>>());
+  }
+"""
 
   val paginatedTemplate = """
   public Observable<PaginatedServiceResult<<<RESULT_TYPE>>>> <<METHOD_NAME>>(
@@ -273,6 +283,13 @@ public class <<CLASSNAME>> extends AmazonRxNettyHttpClient {
     });
   }
 """
+
+  val simpleTemplateNoArgs = """
+  public Observable<ServiceResult<<<RESULT_TYPE>>>> <<METHOD_NAME>>() {
+    return <<METHOD_NAME>>(new <<REQUEST_TYPE>>());
+  }
+"""
+
   val simpleTemplate = """
   public Observable<ServiceResult<<<RESULT_TYPE>>>> <<METHOD_NAME>>(
     final <<REQUEST_TYPE>> request
@@ -296,6 +313,13 @@ public class <<CLASSNAME>> extends AmazonRxNettyHttpClient {
     });
   }
 """
+
+  val voidTemplateNoArgs = """
+  public Observable<ServiceResult<<<RESULT_TYPE>>>> <<METHOD_NAME>>()
+    return <<METHOD_NAME>>(new <<REQUEST_TYPE>>());
+  }
+"""
+
   val voidTemplate = """
   public Observable<ServiceResult<<<RESULT_TYPE>>>> <<METHOD_NAME>>(
     final <<REQUEST_TYPE>> request
