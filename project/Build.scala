@@ -42,7 +42,7 @@ object MainBuild extends Build {
     ))
     .settings(
       sourceGenerators in Compile <+= Def.task {
-        AwsGenerate.test((sourceManaged in Compile).value / "demo")
+        AwsGenerate.generate((sourceManaged in Compile).value)
       }
     )
 

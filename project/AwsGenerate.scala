@@ -60,7 +60,8 @@ object AwsGenerate {
   val pageGetter = """^(get(?:Next)?Token)$""".r
   val pageSetter = """^(set(?:Next)?Token)$""".r
 
-  def test(dir: File): Seq[File] = {
+  def generate(dir: File): Seq[File] = {
+    Files.createDirectories(dir.toPath)
     clientClasses.filter(_.endpoint.isDefined).map(c => {
       println(c.cinfo)
       val file = new File(dir, s"${c.className}.java")
