@@ -67,9 +67,6 @@ abstract public class AmazonRxNettyHttpClient extends AmazonWebServiceClient {
   private static final Map<String,HttpClient<ByteBuf,ByteBuf>> CLIENTS =
     new ConcurrentHashMap<String,HttpClient<ByteBuf,ByteBuf>>();
 
-  protected static final List<Unmarshaller<AmazonServiceException,Node>> EXCEPTION_UNMARSHALERS =
-    new ArrayList<Unmarshaller<AmazonServiceException,Node>>();
-
   protected String mkToken(String... tokens) {
     if (tokens.length == 1)
       return tokens[0];
@@ -87,13 +84,9 @@ abstract public class AmazonRxNettyHttpClient extends AmazonWebServiceClient {
     catch (java.security.NoSuchAlgorithmException e) {
       throw new RuntimeException(e);
     }
-
-    EXCEPTION_UNMARSHALERS.add( new LegacyErrorUnmarshaller());
   }
 
   private AWSCredentialsProvider awsCredentialsProvider;
-
-  abstract protected String getDefaultEndpoint();
 
   public AmazonRxNettyHttpClient() {
     this(new DefaultAWSCredentialsProviderChain(), new ClientConfiguration());
@@ -113,8 +106,10 @@ abstract public class AmazonRxNettyHttpClient extends AmazonWebServiceClient {
   ) {
     super(clientConfiguration);
     this.awsCredentialsProvider = awsCredentialsProvider;
-    setEndpoint(getDefaultEndpoint());
+    init();
   }
+
+  abstract protected void init();
 
   private byte[] hmacSHA256(String data, byte[] key) {
     try {
@@ -168,10 +163,34 @@ abstract public class AmazonRxNettyHttpClient extends AmazonWebServiceClient {
       }
     }
 
-  protected <X, Y extends AmazonWebServiceRequest> Observable<X> invoke(
+  protected <X, Y extends AmazonWebServiceRequest> Observable<X> invokeStax(
     Request<Y> request,
     Unmarshaller<X,StaxUnmarshallerContext> unmarshaller,
     List<Unmarshaller<AmazonServiceException,Node>> errorUnmarshallers,
+    ExecutionContext executionContext
+  ) {
+    StaxRxNettyResponseHandler<X> responseHandler = new StaxRxNettyResponseHandler<X>(unmarshaller);
+    XmlRxNettyErrorResponseHandler errorResponseHandler = new XmlRxNettyErrorResponseHandler(errorUnmarshallers);
+
+    return invoke(request, responseHandler, errorResponseHandler, executionContext);
+  }
+
+  protected <X, Y extends AmazonWebServiceRequest> Observable<X> invokeJson(
+    Request<Y> request,
+    Unmarshaller<X,JsonUnmarshallerContext> unmarshaller,
+    List<JsonErrorUnmarshaller> errorUnmarshallers,
+    ExecutionContext executionContext
+  ) {
+    JsonRxNettyResponseHandler<X> responseHandler = new JsonRxNettyResponseHandler<X>(unmarshaller);
+    JsonRxNettyErrorResponseHandler errorResponseHandler = new JsonRxNettyErrorResponseHandler(request.getServiceName(), errorUnmarshallers);
+
+    return invoke(request, responseHandler, errorResponseHandler, executionContext);
+  }
+
+  protected <X, Y extends AmazonWebServiceRequest> Observable<X> invoke(
+    Request<Y> request,
+    RxNettyResponseHandler<AmazonWebServiceResponse<X>> responseHandler,
+    RxNettyResponseHandler<AmazonServiceException> errorResponseHandler,
     ExecutionContext executionContext
   ) {
     final AtomicReference<AmazonClientException> error = new AtomicReference<AmazonClientException>(null);
@@ -185,7 +204,7 @@ abstract public class AmazonRxNettyHttpClient extends AmazonWebServiceClient {
           return getBackoffStrategyDelay(request, cnt.get(), error.get())
           .flatMap(i -> {
             try {
-              return invokeImpl(request, unmarshaller, errorUnmarshallers, executionContext);
+              return invokeImpl(request, responseHandler, errorResponseHandler, executionContext);
             }
             catch (java.io.UnsupportedEncodingException e) {
               return Observable.<X>error(e);
@@ -214,8 +233,8 @@ abstract public class AmazonRxNettyHttpClient extends AmazonWebServiceClient {
 
   protected <X,Y extends AmazonWebServiceRequest> Observable<X> invokeImpl(
     Request<Y> request,
-    Unmarshaller<X,StaxUnmarshallerContext> unmarshaller,
-    List<Unmarshaller<AmazonServiceException,Node>> errorUnmarshallers,
+    RxNettyResponseHandler<AmazonWebServiceResponse<X>> responseHandler,
+    RxNettyResponseHandler<AmazonServiceException> errorResponseHandler,
     ExecutionContext executionContext
   ) throws java.io.UnsupportedEncodingException {
     request.setEndpoint(endpoint);
@@ -232,9 +251,6 @@ abstract public class AmazonRxNettyHttpClient extends AmazonWebServiceClient {
     }
 
     executionContext.setCredentials(credentials);
-
-    StaxRxNettyResponseHandler<X> responseHandler = new StaxRxNettyResponseHandler<X>(unmarshaller);
-    XmlRxNettyErrorResponseHandler errorResponseHandler = new XmlRxNettyErrorResponseHandler(errorUnmarshallers);
 
 // execute
     ProgressListener listener = originalRequest.getGeneralProgressListener();

@@ -44,7 +44,7 @@ import iep.io.reactivex.netty.protocol.http.client.HttpClientResponse;
  * information (error message, AWS error code, AWS request ID, etc).
  */
 public class XmlRxNettyErrorResponseHandler
-        implements HttpResponseHandler<AmazonServiceException> {
+        implements RxNettyResponseHandler<AmazonServiceException> {
     private static final Log log = LogFactory.getLog(XmlRxNettyErrorResponseHandler.class);
 
     /**
@@ -73,6 +73,7 @@ public class XmlRxNettyErrorResponseHandler
         throw new UnsupportedOperationException("appache response not supported");
     }
 
+    @Override
     public Observable<AmazonServiceException> handle(HttpClientResponse<ByteBuf> response) throws Exception {
         // Try to read the error response
       return response.getContent().reduce(

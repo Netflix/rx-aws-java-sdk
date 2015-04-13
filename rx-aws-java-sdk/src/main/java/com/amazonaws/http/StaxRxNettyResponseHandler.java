@@ -46,7 +46,7 @@ import com.amazonaws.transform.VoidStaxUnmarshaller;
  * @param <T>
  *            Indicates the type being unmarshalled by this response handler.
  */
-public class StaxRxNettyResponseHandler<T> extends StaxResponseHandler<T> {
+public class StaxRxNettyResponseHandler<T> implements RxNettyResponseHandler<AmazonWebServiceResponse<T>> {
 
     /** The StAX unmarshaller to use when handling the response */
     private Unmarshaller<T, StaxUnmarshallerContext> responseUnmarshaller;
@@ -68,16 +68,18 @@ public class StaxRxNettyResponseHandler<T> extends StaxResponseHandler<T> {
      *            The StAX unmarshaller to use on the response.
      */
     public StaxRxNettyResponseHandler(Unmarshaller<T, StaxUnmarshallerContext> responseUnmarshaller) {
-        super(responseUnmarshaller);
         this.responseUnmarshaller = responseUnmarshaller;
         if (this.responseUnmarshaller == null) {
             this.responseUnmarshaller = new VoidStaxUnmarshaller<T>();
         }
     }
 
-    /**
-     * @see com.amazonaws.http.HttpResponseHandler#handle(com.amazonaws.http.HttpResponse)
-     */
+    @Override
+    public AmazonWebServiceResponse<T> handle(HttpResponse r) {
+      throw new UnsupportedOperationException("apache client not suppported");
+    }
+
+    @Override
     public Observable<AmazonWebServiceResponse<T>> handle(HttpClientResponse<ByteBuf> response) throws Exception {
       return response.getContent().reduce(
         new ByteArrayOutputStream(),
