@@ -1,8 +1,8 @@
 package com.amazonaws.http;
 
-import iep.rx.Observable;
+import rx.Observable;
 import io.netty.buffer.ByteBuf;
-import iep.io.reactivex.netty.protocol.http.client.HttpClientResponse;
+import io.reactivex.netty.protocol.http.client.HttpClientResponse;
 
 import com.amazonaws.AmazonWebServiceResponse;
 

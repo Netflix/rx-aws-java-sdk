@@ -29,10 +29,10 @@ import com.amazonaws.transform.Unmarshaller;
 import com.amazonaws.util.IOUtils;
 import com.amazonaws.util.XpathUtils;
 
-import iep.rx.Observable;
-import iep.rx.functions.*;
+import rx.Observable;
+import rx.functions.*;
 import io.netty.buffer.ByteBuf;
-import iep.io.reactivex.netty.protocol.http.client.HttpClientResponse;
+import io.reactivex.netty.protocol.http.client.HttpClientResponse;
 
 /**
  * Implementation of HttpResponseHandler that handles only error responses from

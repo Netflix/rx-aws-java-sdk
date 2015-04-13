@@ -260,7 +260,7 @@ import com.amazonaws.services.*;
 import <<PKG>>.model.*;
 import <<PKG>>.model.transform.*;
 
-import iep.rx.Observable;
+import rx.Observable;
 
 public class <<CLASSNAME>> extends AmazonRxNettyHttpClient {
 

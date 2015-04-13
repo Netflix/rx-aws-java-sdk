@@ -2,7 +2,7 @@ package com.amazonaws.transform;
 
 import com.fasterxml.jackson.core.JsonParser;
 
-import iep.io.reactivex.netty.protocol.http.client.HttpResponseHeaders;
+import io.reactivex.netty.protocol.http.client.HttpResponseHeaders;
 
 import com.amazonaws.http.HttpResponse;
 

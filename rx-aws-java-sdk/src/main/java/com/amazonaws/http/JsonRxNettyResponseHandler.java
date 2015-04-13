@@ -19,10 +19,10 @@ import com.amazonaws.util.CRC32ChecksumCalculatingInputStream;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import iep.rx.Observable;
-import iep.rx.functions.*;
+import rx.Observable;
+import rx.functions.*;
 import io.netty.buffer.ByteBuf;
-import iep.io.reactivex.netty.protocol.http.client.HttpClientResponse;
+import io.reactivex.netty.protocol.http.client.HttpClientResponse;
 
 public class JsonRxNettyResponseHandler<T> implements RxNettyResponseHandler<AmazonWebServiceResponse<T>> {
 

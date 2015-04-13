@@ -24,10 +24,10 @@ import javax.xml.stream.XMLEventReader;
 import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLStreamException;
 
-import iep.rx.Observable;
-import iep.rx.functions.*;
+import rx.Observable;
+import rx.functions.*;
 import io.netty.buffer.ByteBuf;
-import iep.io.reactivex.netty.protocol.http.client.HttpClientResponse;
+import io.reactivex.netty.protocol.http.client.HttpClientResponse;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
