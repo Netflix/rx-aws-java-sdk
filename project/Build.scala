@@ -33,11 +33,13 @@ object MainBuild extends Build {
     .settings(libraryDependencies ++= commonDeps)
     .settings(libraryDependencies ++= Seq(
       Dependencies.awsObjectMapper,
+      Dependencies.jzlib,
       Dependencies.rxjava,
       Dependencies.rxnettyCore,
       Dependencies.rxnettyCtxts,
       Dependencies.spectatorApi,
-      Dependencies.slf4jApi
+      Dependencies.slf4jApi,
+      "io.reactivex" %% "rxscala" % "0.24.0" % "test"
     ))
     .settings(
       sourceGenerators in Compile <+= Def.task {

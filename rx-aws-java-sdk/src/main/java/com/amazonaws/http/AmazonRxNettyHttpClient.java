@@ -15,6 +15,7 @@ import rx.Observable;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.handler.logging.LogLevel;
+import io.netty.handler.codec.http.HttpMethod;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.netty.channel.ChannelOption;
 import io.netty.channel.ChannelPipeline;
@@ -263,14 +264,17 @@ abstract public class AmazonRxNettyHttpClient extends AmazonWebServiceClient {
     String method = "POST";
     String version = "2014-10-01";
     String service = request.getServiceName().substring(6).toLowerCase();
+    if (service.endsWith("v2")) service = service.substring(0, service.length() - 2);
     String host = endpoint.getHost();
     String region = AwsHostNameUtils.parseRegionName(host, service);
+
     StringBuffer sb = new StringBuffer();
     for (Map.Entry<String,String> e : request.getParameters().entrySet()) {
       if (sb.length() > 0) sb.append("&");
       sb.append(e.getKey()).append("=").append(URLEncoder.encode(e.getValue(), "UTF-8"));
     }
-    String requestParameters = sb.toString();
+    String canonicalQuerystring = sb.toString();
+    String content = (request.getContent() == null) ? "" : ((StringInputStream) request.getContent()).getString();
 
     String accessKey = credentials.getAWSAccessKeyId();
     String secretKey = credentials.getAWSSecretKey();
@@ -279,11 +283,14 @@ abstract public class AmazonRxNettyHttpClient extends AmazonWebServiceClient {
     String datestamp  = ISODateTimeFormat.basicDate().withZoneUTC().print(startTime);
 
     Map<String,String> headers = new ConcurrentHashMap<String,String>();
-    headers.put("Content-type", "application/x-www-form-urlencoded; charset=utf-8");
     headers.put("Accept-encoding", "gzip");
     headers.put("Host",  host);
     headers.put("X-Amz-Date", amzDate);
-    headers.put("x-amz-security-token", ((AWSSessionCredentials) credentials).getSessionToken());
+    if (credentials instanceof AWSSessionCredentials)
+      headers.put("x-amz-security-token", ((AWSSessionCredentials) credentials).getSessionToken());
+    request.getHeaders().entrySet().stream().forEach(e -> {
+      headers.put(e.getKey(), e.getValue());
+    });
 
     String algorithm = "AWS4-HMAC-SHA256";
     String credentialScope = datestamp + "/" + region + "/" + service + "/aws4_request";
@@ -299,10 +306,11 @@ abstract public class AmazonRxNettyHttpClient extends AmazonWebServiceClient {
       return e.getKey().toLowerCase();
     }).reduce((s1, s2) -> s1 + ";" + s2).get();
 
-    String canonicalUri = "/";
-    String canonicalQuerystring = "";
+    String canonicalUri = request.getResourcePath();
+    if (canonicalUri == null || canonicalUri.length() == 0) canonicalUri = "/";
+    //String canonicalQuerystring = "";
 
-    String payloadHash = computeSHA256(requestParameters);
+    String payloadHash = computeSHA256(content);
     String canonicalRequest = method + "\n" + canonicalUri + "\n" + canonicalQuerystring + "\n" + canonicalHeaders + "\n" + signedHeaders + "\n" + payloadHash;
 
     String stringToSign = algorithm + "\n" + amzDate + "\n" + credentialScope + "\n" + computeSHA256(canonicalRequest);
@@ -314,13 +322,13 @@ abstract public class AmazonRxNettyHttpClient extends AmazonWebServiceClient {
 
     String path = canonicalUri + ((canonicalQuerystring.length() == 0) ? "" : "?" + canonicalQuerystring );
 
-    HttpClientRequest<ByteBuf> rxRequest = HttpClientRequest.createPost(path);
+    HttpClientRequest<ByteBuf> rxRequest = HttpClientRequest.create(HttpMethod.valueOf(request.getHttpMethod().toString()), path);
     HttpRequestHeaders rHeaders = rxRequest.getHeaders();
     rHeaders.set("Authorization", authorizationHeader);
     headers.entrySet().stream().forEach(e -> {
       rHeaders.set(e.getKey(), e.getValue());
     });
-    rxRequest.withContent(requestParameters);
+    rxRequest.withContent(content);
     return getClient(host).submit(rxRequest)
     .flatMap(response -> {
       if (response.getStatus().code() / 100 == 2) {
