@@ -2,14 +2,13 @@ import sbt._
 
 object Dependencies {
   object Versions {
-    val archaius   = "2.0.0-SNAPSHOT"
     val aws        = "1.9.16"
     val awsMapper  = aws + ".2"
     val guice      = "4.0-beta5"
     val karyon     = "2.2.0-rc.1"
     val ribbon     = "2.0.0"
     val rxj        = "1.0.8"
-    val rxnetty    = "0.4.8.1-SNAPSHOT"
+    val rxnetty    = "0.4.8.1"
     val scala      = "2.11.6"
     val slf4j      = "1.7.10"
     val spectator  = "0.20.0"
@@ -17,11 +16,6 @@ object Dependencies {
 
   import Versions._
 
-  val archaiusCore    = "com.netflix.archaius" % "archaius-core" % archaius
-  val archaiusGuice   = "com.netflix.archaius" % "archaius-guice" % archaius
-  val archaiusLegacy  = "com.netflix.archaius" % "archaius-legacy" % archaius
-  val archaiusPersist = "com.netflix.archaius" % "archaius-persisted2" % archaius
-  val archaiusTypesafe= "com.netflix.archaius" % "archaius-typesafe" % archaius
   val awsObjectMapper = "com.netflix.awsobjectmapper" % "awsobjectmapper" % awsMapper
   val awsCore         = "com.amazonaws" % "aws-java-sdk-core" % aws
   val awsDynamoDB     = "com.amazonaws" % "aws-java-sdk-dynamodb" % aws
