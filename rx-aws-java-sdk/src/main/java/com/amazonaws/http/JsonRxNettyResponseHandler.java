@@ -12,7 +12,7 @@ import com.amazonaws.AmazonWebServiceResponse;
 import com.amazonaws.ResponseMetadata;
 import com.amazonaws.internal.CRC32MismatchException;
 import com.amazonaws.transform.JsonUnmarshallerContext;
-import com.amazonaws.transform.JsonRxUnmarshallerContextImpl;
+import com.amazonaws.transform.JsonRxNettyUnmarshallerContextImpl;
 import com.amazonaws.transform.Unmarshaller;
 import com.amazonaws.transform.VoidJsonUnmarshaller;
 import com.amazonaws.util.CRC32ChecksumCalculatingInputStream;
@@ -80,7 +80,7 @@ public class JsonRxNettyResponseHandler<T> implements RxNettyResponseHandler<Ama
             }
 
             AmazonWebServiceResponse<T> awsResponse = new AmazonWebServiceResponse<T>();
-            JsonUnmarshallerContext unmarshallerContext = new JsonRxUnmarshallerContextImpl(jsonParser, response.getHeaders());
+            JsonUnmarshallerContext unmarshallerContext = new JsonRxNettyUnmarshallerContextImpl(jsonParser, response.getHeaders());
             registerAdditionalMetadataExpressions(unmarshallerContext);
 
             T result = responseUnmarshaller.unmarshall(unmarshallerContext);

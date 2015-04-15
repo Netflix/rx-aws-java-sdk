@@ -8,10 +8,10 @@ import com.amazonaws.http.HttpResponse;
 
 import com.amazonaws.transform.JsonUnmarshallerContextImpl;
 
-public class JsonRxUnmarshallerContextImpl extends JsonUnmarshallerContextImpl {
+public class JsonRxNettyUnmarshallerContextImpl extends JsonUnmarshallerContextImpl {
   final HttpResponseHeaders httpHeaders;
 
-  public JsonRxUnmarshallerContextImpl(JsonParser jsonParser, HttpResponseHeaders httpHeaders) {
+  public JsonRxNettyUnmarshallerContextImpl(JsonParser jsonParser, HttpResponseHeaders httpHeaders) {
     super(jsonParser);
     this.httpHeaders = httpHeaders;
   }
