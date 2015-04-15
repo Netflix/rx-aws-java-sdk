@@ -23,16 +23,18 @@ object MainBuild extends Build {
 
   lazy val root = project.in(file("."))
     .aggregate(
-      `rx-aws-java-sdk`
+      `rx-aws-java-sdk-core`,
+      `rx-aws-java-sdk-dynamodb`,
+      `rx-aws-java-sdk-ec2`
     )
     .settings(buildSettings: _*)
     .settings(BuildSettings.noPackaging: _*)
 
-  lazy val `rx-aws-java-sdk` = project
+  lazy val `rx-aws-java-sdk-core` = project
     .settings(buildSettings: _*)
     .settings(libraryDependencies ++= commonDeps)
     .settings(libraryDependencies ++= Seq(
-      Dependencies.awsObjectMapper,
+      "com.amazonaws" % "aws-java-sdk-core" % "1.9.16",
       Dependencies.jzlib,
       Dependencies.rxjava,
       Dependencies.rxnettyCore,
@@ -41,9 +43,32 @@ object MainBuild extends Build {
       Dependencies.slf4jApi,
       "io.reactivex" %% "rxscala" % "0.24.0" % "test"
     ))
+
+  lazy val `rx-aws-java-sdk-dynamodb` = project
+    .dependsOn(`rx-aws-java-sdk-core`)
+    .settings(buildSettings: _*)
+    .settings(libraryDependencies ++= commonDeps)
+    .settings(libraryDependencies ++= Seq(
+      "com.amazonaws" % "aws-java-sdk-dynamodb" % "1.9.16",
+      "io.reactivex" %% "rxscala" % "0.24.0" % "test"
+    ))
     .settings(
       sourceGenerators in Compile <+= Def.task {
-        AwsGenerate.generate((sourceManaged in Compile).value)
+        AwsGenerate.generate((sourceManaged in Compile).value, List("dynamodb", "dynamodbv2"))
+      }
+    )
+
+  lazy val `rx-aws-java-sdk-ec2` = project
+    .dependsOn(`rx-aws-java-sdk-core`)
+    .settings(buildSettings: _*)
+    .settings(libraryDependencies ++= commonDeps)
+    .settings(libraryDependencies ++= Seq(
+      "com.amazonaws" % "aws-java-sdk-ec2" % "1.9.16",
+      "io.reactivex" %% "rxscala" % "0.24.0" % "test"
+    ))
+    .settings(
+      sourceGenerators in Compile <+= Def.task {
+        AwsGenerate.generate((sourceManaged in Compile).value, List("ec2"))
       }
     )
 

@@ -66,9 +66,9 @@ object AwsGenerate {
   val pageGetter = """^(get(?:Next)?Token)$""".r
   val pageSetter = """^(set(?:Next)?Token)$""".r
 
-  def generate(dir: File): Seq[File] = {
+  def generate(dir: File, pkgSuffixes: List[String]): Seq[File] = {
     Files.createDirectories(dir.toPath)
-    clientClasses.filter(_.endpoint.isDefined).map(c => {
+    clientClasses(pkgSuffixes).filter(_.endpoint.isDefined).map(c => {
       println(c.cinfo)
       val file = new File(dir, s"${c.className}.java")
       val content = mkContent(c)
@@ -77,28 +77,29 @@ object AwsGenerate {
     })
   }
 
-  def clientClasses: List[ClientInfo] = {
+  def clientClasses(pkgSuffixes: List[String]): List[ClientInfo] = {
     val cl = classOf[com.amazonaws.services.ec2.AmazonEC2].getClassLoader
-    val pkg = "com.amazonaws.services"
-    ClassPath.from(cl).getTopLevelClassesRecursive(pkg).flatMap(cinfo => {
-      cinfo.getSimpleName match {
-        case clientPattern(prefix) => {
-          val exceptionUnmarshallers = ClassPath.from(cl)
-          .getTopLevelClassesRecursive(cinfo.getPackageName).flatMap(c2 => {
-            c2.getSimpleName match {
-              case exceptionUnmarshaller(n) => {
-                Some(c2)
+    pkgSuffixes.flatMap(pkgSuffix => {
+      val pkg = s"com.amazonaws.services.${pkgSuffix}"
+      ClassPath.from(cl).getTopLevelClassesRecursive(pkg).flatMap(cinfo => {
+        cinfo.getSimpleName match {
+          case clientPattern(prefix) => {
+            val exceptionUnmarshallers = ClassPath.from(cl)
+            .getTopLevelClassesRecursive(cinfo.getPackageName).flatMap(c2 => {
+              c2.getSimpleName match {
+                case exceptionUnmarshaller(n) => {
+                  Some(c2)
+                }
+                case _ => None
               }
-              case _ => None
-            }
-          }).toList.sortBy(_.toString)
-          Some(ClientInfo(prefix, cinfo, exceptionUnmarshallers))
+            }).toList.sortBy(_.toString)
+            Some(ClientInfo(prefix, cinfo, exceptionUnmarshallers))
+          }
+          case _ => None
         }
-        case _ => None
-      }
+      })
     }).toList.sortBy(_.toString)
   }
-
   def mkContent(c: ClientInfo): String = {
     mkHeader(c) + mkBody(c).mkString("\n") + mkFooter(c)
   }
