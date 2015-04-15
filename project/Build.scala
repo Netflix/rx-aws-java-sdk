@@ -25,7 +25,8 @@ object MainBuild extends Build {
     .aggregate(
       `rx-aws-java-sdk-core`,
       `rx-aws-java-sdk-dynamodb`,
-      `rx-aws-java-sdk-ec2`
+      `rx-aws-java-sdk-ec2`,
+      `rx-aws-java-sdk`
     )
     .settings(buildSettings: _*)
     .settings(BuildSettings.noPackaging: _*)
@@ -34,7 +35,7 @@ object MainBuild extends Build {
     .settings(buildSettings: _*)
     .settings(libraryDependencies ++= commonDeps)
     .settings(libraryDependencies ++= Seq(
-      "com.amazonaws" % "aws-java-sdk-core" % "1.9.16",
+      Dependencies.awsCore,
       Dependencies.jzlib,
       Dependencies.rxjava,
       Dependencies.rxnettyCore,
@@ -49,7 +50,7 @@ object MainBuild extends Build {
     .settings(buildSettings: _*)
     .settings(libraryDependencies ++= commonDeps)
     .settings(libraryDependencies ++= Seq(
-      "com.amazonaws" % "aws-java-sdk-dynamodb" % "1.9.16",
+      Dependencies.awsDynamoDB,
       "io.reactivex" %% "rxscala" % "0.24.0" % "test"
     ))
     .settings(
@@ -63,7 +64,7 @@ object MainBuild extends Build {
     .settings(buildSettings: _*)
     .settings(libraryDependencies ++= commonDeps)
     .settings(libraryDependencies ++= Seq(
-      "com.amazonaws" % "aws-java-sdk-ec2" % "1.9.16",
+      Dependencies.awsEc2,
       "io.reactivex" %% "rxscala" % "0.24.0" % "test"
     ))
     .settings(
@@ -71,6 +72,12 @@ object MainBuild extends Build {
         AwsGenerate.generate((sourceManaged in Compile).value, List("ec2"))
       }
     )
+
+  lazy val `rx-aws-java-sdk` = project
+    .dependsOn(`rx-aws-java-sdk-dynamodb`)
+    .dependsOn(`rx-aws-java-sdk-ec2`)
+    .settings(buildSettings: _*)
+    .settings(libraryDependencies ++= commonDeps)
 
   lazy val commonDeps = Seq(
     Dependencies.junitInterface % "test",

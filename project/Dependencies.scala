@@ -3,7 +3,8 @@ import sbt._
 object Dependencies {
   object Versions {
     val archaius   = "2.0.0-SNAPSHOT"
-    val aws        = "1.9.16.2"
+    val aws        = "1.9.16"
+    val awsMapper  = aws + ".2"
     val guice      = "4.0-beta5"
     val karyon     = "2.2.0-rc.1"
     val ribbon     = "2.0.0"
@@ -21,7 +22,10 @@ object Dependencies {
   val archaiusLegacy  = "com.netflix.archaius" % "archaius-legacy" % archaius
   val archaiusPersist = "com.netflix.archaius" % "archaius-persisted2" % archaius
   val archaiusTypesafe= "com.netflix.archaius" % "archaius-typesafe" % archaius
-  val awsObjectMapper = "com.netflix.awsobjectmapper" % "awsobjectmapper" % aws
+  val awsObjectMapper = "com.netflix.awsobjectmapper" % "awsobjectmapper" % awsMapper
+  val awsCore         = "com.amazonaws" % "aws-java-sdk-core" % aws
+  val awsDynamoDB     = "com.amazonaws" % "aws-java-sdk-dynamodb" % aws
+  val awsEc2          = "com.amazonaws" % "aws-java-sdk-ec2" % aws
   val equalsVerifier  = "nl.jqno.equalsverifier" % "equalsverifier" % "1.5.1"
   val eureka          = "com.netflix.eureka" % "eureka-client" % "1.1.150"
   val governator      = "com.netflix.governator" % "governator" % "1.3.3"
