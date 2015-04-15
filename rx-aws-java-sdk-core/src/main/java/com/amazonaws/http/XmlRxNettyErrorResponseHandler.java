@@ -32,7 +32,7 @@ import com.amazonaws.util.XpathUtils;
 import rx.Observable;
 import rx.functions.*;
 import io.netty.buffer.ByteBuf;
-import io.reactivex.netty.protocol.http.client.HttpClientResponse;
+import iep.io.reactivex.netty.protocol.http.client.HttpClientResponse;
 
 /**
  * Implementation of HttpResponseHandler that handles only error responses from

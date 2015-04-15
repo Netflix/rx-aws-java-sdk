@@ -22,7 +22,7 @@ import java.io.ByteArrayOutputStream;
 import rx.Observable;
 import rx.functions.*;
 import io.netty.buffer.ByteBuf;
-import io.reactivex.netty.protocol.http.client.HttpClientResponse;
+import iep.io.reactivex.netty.protocol.http.client.HttpClientResponse;
 
 public class JsonRxNettyResponseHandler<T> implements RxNettyResponseHandler<AmazonWebServiceResponse<T>> {
 

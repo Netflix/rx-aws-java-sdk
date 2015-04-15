@@ -9,7 +9,7 @@ object Dependencies {
     val karyon     = "2.2.0-rc.1"
     val ribbon     = "2.0.0"
     val rxj        = "1.0.8"
-    val rxnetty    = "0.4.8"
+    val rxnetty    = "0.4.8.1-SNAPSHOT"
     val scala      = "2.11.6"
     val slf4j      = "1.7.10"
     val spectator  = "0.20.0"
@@ -47,9 +47,9 @@ object Dependencies {
   val ribbonHttp      = "com.netflix.ribbon" % "ribbon-httpclient" % ribbon
   val ribbonLb        = "com.netflix.ribbon" % "ribbon-loadbalancer" % ribbon
   val rxjava          = "io.reactivex" % "rxjava" % rxj
-  val rxnettyCore     = "io.reactivex" % "rxnetty" % rxnetty
-  val rxnettyCtxts    = "io.reactivex" % "rxnetty-contexts" % rxnetty
-  val rxnettySpectator= "io.reactivex" % "rxnetty-spectator" % rxnetty
+  val rxnettyCore     = "com.netflix.iep-shadow" % "iepshadow-rxnetty" % rxnetty
+  val rxnettyCtxts    = "com.netflix.iep-shadow" % "iepshadow-rxnetty-contexts" % rxnetty
+  val rxnettySpectator= "com.netflix.iep-shadow" % "iepshadow-rxnetty-spectator" % rxnetty
   val scalaLibrary    = "org.scala-lang" % "scala-library" % scala
   val scalaLibraryAll = "org.scala-lang" % "scala-library-all" % scala
   val scalaLogging    = "com.typesafe.scala-logging" % "scala-logging_2.11" % "3.1.0"

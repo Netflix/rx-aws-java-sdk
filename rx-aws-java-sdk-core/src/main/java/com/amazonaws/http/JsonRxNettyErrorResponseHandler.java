@@ -26,7 +26,7 @@ import com.amazonaws.util.json.JSONObject;
 
 import rx.Observable;
 import io.netty.buffer.ByteBuf;
-import io.reactivex.netty.protocol.http.client.HttpClientResponse;
+import iep.io.reactivex.netty.protocol.http.client.HttpClientResponse;
 
 public class JsonRxNettyErrorResponseHandler implements RxNettyResponseHandler<AmazonServiceException> {
 

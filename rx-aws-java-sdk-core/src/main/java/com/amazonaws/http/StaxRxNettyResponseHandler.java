@@ -27,7 +27,7 @@ import javax.xml.stream.XMLStreamException;
 import rx.Observable;
 import rx.functions.*;
 import io.netty.buffer.ByteBuf;
-import io.reactivex.netty.protocol.http.client.HttpClientResponse;
+import iep.io.reactivex.netty.protocol.http.client.HttpClientResponse;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
