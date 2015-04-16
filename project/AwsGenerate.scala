@@ -23,13 +23,21 @@ case class ClientInfo(
 }
 
 object Pagination {
-  val tokenRegex  = """^(get|set)(?:Next)?Token$""".r
-  val keyMapRegex = """^(get|set)(?:LastEvaluated|ExclusiveStart)Key$""".r
+  val tokenRegex             = """^(get|set)(?:Next)?Token$""".r
+  val keyRegex               = """^(get|set)(?:LastEvaluated|ExclusiveStart)Key$""".r
+  val markerRegex            = """^(get|set)(?:Next)?Marker$""".r
+  val recordNameRegex        = """^(get|set)(?:Start|Next)?RecordName$""".r
+  val recordTypeRegex        = """^(get|set)(?:Start|Next)?RecordType$""".r
+  val recordIdentifierRegex  = """^(get|set)(?:Start|Next)?RecordIdentifier$""".r
 
 
   def apply(request: Class[_], result: Class[_]): List[Pagination] = List(
     mkPagination(tokenRegex, request, result),
-    mkPagination(keyMapRegex, request, result)
+    mkPagination(keyRegex, request, result),
+    mkPagination(markerRegex, request, result),
+    mkPagination(recordNameRegex, request, result),
+    mkPagination(recordTypeRegex, request, result),
+    mkPagination(recordIdentifierRegex, request, result)
   ).flatten
 
   def mkPagination(
@@ -37,27 +45,28 @@ object Pagination {
     request: Class[_],
     result: Class[_]
   ): Option[Pagination] = {
-    val requestGetter = request.getDeclaredMethods.toList.find(_.getName match {
+    val requestGetter = request.getDeclaredMethods.toList.filter(_.getName match {
       case regex("get") => true
       case _ => false
-    })
-    val requestSetter = request.getDeclaredMethods.toList.find(_.getName match {
+    }).filter(_.getParameterTypes.size == 0)
+    val requestSetter = request.getDeclaredMethods.toList.filter(_.getName match {
       case regex("set") => true
       case _ => false
-    })
-    val resultGetter = result.getDeclaredMethods.toList.find(_.getName match {
+    }).filter(_.getParameterTypes.size == 1)
+    val resultGetter = result.getDeclaredMethods.toList.filter(_.getName match {
       case regex("get") => true
       case _ => false
-    })
+    }).filter(_.getParameterTypes.size == 0)
     if (requestGetter.isEmpty || requestSetter.isEmpty || resultGetter.isEmpty) None
     //else if (getter.isEmpty || setter.isEmpty)
     //  throw new IllegalStateException(s"${getter} || ${setter}")
     else Some(
       Pagination(
-        requestGetter.get.getReturnType.getSimpleName,
-        requestGetter.get.getName,
-        requestSetter.get.getName,
-        resultGetter.get.getName
+        requestGetter.head.getReturnType.getSimpleName,
+        requestGetter.head.getName,
+        requestSetter.head.getName,
+        resultGetter.head.getName,
+        requestSetter.size > 1
       )
     )
   }
@@ -67,8 +76,14 @@ case class Pagination(
   objType: String,
   requestGetterName: String,
   requestSetterName: String,
-  resultGetterName: String
-)
+  resultGetterName: String,
+  multipleSetters: Boolean
+) {
+  def strCast: String = {
+    if (multipleSetters) s"(${objType})"
+    else ""
+  }
+}
 
 object AwsGenerate {
 
@@ -336,7 +351,7 @@ public class <<CLASSNAME>> extends AmazonRxNettyHttpClient implements <<IFACENAM
 """
 
   def mkInitPagination(pagination: List[Pagination]): String = {
-    pagination.map(p => s"    request.${p.requestSetterName}(null);").mkString("\n")
+    pagination.map(p => s"request.${p.requestSetterName}(${p.strCast}null);").mkString("\n    ")
   }
   def mkTokenParameters(pagination: List[Pagination]): String = {
     pagination.map(p => s"((request.${p.requestGetterName}() == null) ? null : request.${p.requestGetterName}().toString())").mkString(", ")
