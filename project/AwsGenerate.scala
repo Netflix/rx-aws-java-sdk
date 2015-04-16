@@ -277,6 +277,8 @@ import <<PKG>>.model.*;
 import rx.Observable;
 
 public interface <<IFACENAME>> {
+
+  public void setEndpoint(String endpoint);
 """
 
   val headerTemplate = """
