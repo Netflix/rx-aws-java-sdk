@@ -15,6 +15,7 @@ case class ClientInfo(
 ) {
   lazy val endpoint: Option[String] = AwsGenerate.endpoints.get(name.toLowerCase)
   lazy val className: String = s"Amazon${name}RxNettyClient"
+  lazy val interfaceName: String = s"Amazon${name}RxNetty"
   lazy val isStax: Boolean = {
     exceptionUnmarshallers.forall(_.load.getSuperclass.getSimpleName == "StandardErrorUnmarshaller")
   }
@@ -79,12 +80,14 @@ object AwsGenerate {
 
   def generate(dir: File, pkgSuffixes: List[String]): Seq[File] = {
     Files.createDirectories(dir.toPath)
-    clientClasses(pkgSuffixes).filter(_.endpoint.isDefined).map(c => {
+    clientClasses(pkgSuffixes).filter(_.endpoint.isDefined).flatMap(c => {
       println(c.cinfo)
+      val iFile = new File(dir, s"${c.interfaceName}.java")
       val file = new File(dir, s"${c.className}.java")
-      val content = mkContent(c)
+      val (iContent, content) = mkContent(c)
+      Files.write(iFile.toPath, iContent.getBytes(StandardCharsets.UTF_8))
       Files.write(file.toPath, content.getBytes(StandardCharsets.UTF_8))
-      file
+      List(iFile, file)
     })
   }
 
@@ -111,22 +114,30 @@ object AwsGenerate {
       })
     }).toList.sortBy(_.toString)
   }
-  def mkContent(c: ClientInfo): String = {
+  def mkContent(c: ClientInfo): (String, String) = (
+    mkIHeader(c) + mkBody(c, true).mkString("\n") + mkIFooter(c),
     mkHeader(c) + mkBody(c).mkString("\n") + mkFooter(c)
+  )
+
+  def mkIHeader(c: ClientInfo): String = {
+    iHeaderTemplate
+    .replaceAll("<<PKG>>", c.cinfo.getPackageName)
+    .replaceAll("<<IFACENAME>>", c.interfaceName)
   }
 
-  def mkHeader(c: ClientInfo): String = {
+  def mkHeader(c: ClientInfo, isInterface: Boolean = false): String = {
     val (imp, field, init) = mkExceptionUnmarshaller(c)
     headerTemplate
     .replaceAll("<<PKG>>", c.cinfo.getPackageName)
     .replaceAll("<<CLASSNAME>>", c.className)
+    .replaceAll("<<IFACENAME>>", c.interfaceName)
     .replaceAll("<<ENDPOINT>>", c.endpoint.get)
     .replaceAll("<<EXCEPTION_UNMARSHALLER_IMPORT>>", imp)
     .replaceAll("<<EXCEPTION_UNMARSHALLER_FIELD>>", field)
     .replaceAll("<<EXCEPTION_UNMARSHALLER_INIT>>", init)
   }
 
-  def mkBody(c: ClientInfo): Seq[String] = {
+  def mkBody(c: ClientInfo, isInterface: Boolean = false): Seq[String] = {
     val cls = c.cinfo.load
     cls.getDeclaredMethods
     .filter(_.getModifiers == 1)
@@ -139,12 +150,10 @@ object AwsGenerate {
     .toList
     .filter(_._2.map(_.getParameterTypes.size).sum > 0)
     .sortBy(_._1)
-//.filter(_.getName == "describeInstances")
-//.filter(_.getName == "releaseAddress")
-    .flatMap({ case (n, ms) => mkMethod(c, ms.toList) })
+    .flatMap({ case (n, ms) => mkMethod(c, ms.toList, isInterface) })
   }
 
-  def mkMethod(c: ClientInfo, methods: List[Method]): Option[String] = {
+  def mkMethod(c: ClientInfo, methods: List[Method], isInterface: Boolean): Option[String] = {
     val method :: remainder = methods.sortBy(_.getParameterTypes.size).reverse
     val methodName = method.getName
     val requestType = method.getParameterTypes.head
@@ -158,12 +167,24 @@ object AwsGenerate {
     val pagination = Pagination(requestType, resultType)
 
     val content = {
-      if (pagination.size > 0)
-        remainder.headOption.map(_ => paginatedTemplateNoArgs).getOrElse("") + paginatedTemplate
-      else if (strResultType == "Void")
-        remainder.headOption.map(_ => voidTemplateNoArgs).getOrElse("") + voidTemplate
-      else
-        remainder.headOption.map(_ => simpleTemplateNoArgs).getOrElse("") + simpleTemplate
+      if (pagination.size > 0) {
+        if (isInterface)
+          remainder.headOption.map(_ => paginatedITemplateNoArgs).getOrElse("") + paginatedITemplate
+         else
+          remainder.headOption.map(_ => paginatedTemplateNoArgs).getOrElse("") + paginatedTemplate
+      }
+      else if (strResultType == "Void") {
+        if (isInterface)
+          remainder.headOption.map(_ => voidITemplateNoArgs).getOrElse("") + voidITemplate
+        else
+          remainder.headOption.map(_ => voidTemplateNoArgs).getOrElse("") + voidTemplate
+      }
+      else {
+        if (isInterface)
+          remainder.headOption.map(_ => simpleITemplateNoArgs).getOrElse("") + simpleITemplate
+        else
+          remainder.headOption.map(_ => simpleTemplateNoArgs).getOrElse("") + simpleTemplate
+      }
     }
 
     Some(
@@ -178,6 +199,7 @@ object AwsGenerate {
     )
   }
 
+  def mkIFooter(c: ClientInfo): String = iFooterTemplate
   def mkFooter(c: ClientInfo): String = footerTemplate
 
   def mkExceptionUnmarshaller(c: ClientInfo): (String, String, String) = {
@@ -247,6 +269,16 @@ object AwsGenerate {
     "sqs" -> "sqs.us-east-1.amazonaws.com"
   )
 
+  val iHeaderTemplate = """
+package <<PKG>>;
+
+import com.amazonaws.services.*;
+import <<PKG>>.model.*;
+import rx.Observable;
+
+public interface <<IFACENAME>> {
+"""
+
   val headerTemplate = """
 package <<PKG>>;
 
@@ -274,7 +306,7 @@ import <<PKG>>.model.transform.*;
 
 import rx.Observable;
 
-public class <<CLASSNAME>> extends AmazonRxNettyHttpClient {
+public class <<CLASSNAME>> extends AmazonRxNettyHttpClient implements <<IFACENAME>> {
 
   public <<CLASSNAME>>() {
     super();
@@ -296,7 +328,7 @@ public class <<CLASSNAME>> extends AmazonRxNettyHttpClient {
 
   @Override
   protected void init() {
-    this.setEndpoint("<<ENDPOINT>>");
+    setEndpoint("<<ENDPOINT>>");
     <<EXCEPTION_UNMARSHALLER_INIT>>
   }
 """
@@ -311,13 +343,25 @@ public class <<CLASSNAME>> extends AmazonRxNettyHttpClient {
     pagination.map(p => s"        request.${p.requestSetterName}(result.${p.resultGetterName}());").mkString("\n")
   }
 
+  val paginatedITemplateNoArgs = """
+  public Observable<PaginatedServiceResult<<<RESULT_TYPE>>>> <<METHOD_NAME>>();
+"""
+
+  val paginatedITemplate = """
+  public Observable<PaginatedServiceResult<<<RESULT_TYPE>>>> <<METHOD_NAME>>(
+    <<REQUEST_TYPE>> request
+  );
+"""
+
   val paginatedTemplateNoArgs = """
+  @Override
   public Observable<PaginatedServiceResult<<<RESULT_TYPE>>>> <<METHOD_NAME>>() {
     return <<METHOD_NAME>>(new <<REQUEST_TYPE>>());
   }
 """
 
   val paginatedTemplate = """
+  @Override
   public Observable<PaginatedServiceResult<<<RESULT_TYPE>>>> <<METHOD_NAME>>(
     final <<REQUEST_TYPE>> request
   ) {
@@ -355,13 +399,25 @@ public class <<CLASSNAME>> extends AmazonRxNettyHttpClient {
   }
 """
 
+  val simpleITemplateNoArgs = """
+  public Observable<ServiceResult<<<RESULT_TYPE>>>> <<METHOD_NAME>>();
+"""
+
+  val simpleITemplate = """
+  public Observable<ServiceResult<<<RESULT_TYPE>>>> <<METHOD_NAME>>(
+    <<REQUEST_TYPE>> request
+  );
+"""
+
   val simpleTemplateNoArgs = """
+  @Override
   public Observable<ServiceResult<<<RESULT_TYPE>>>> <<METHOD_NAME>>() {
     return <<METHOD_NAME>>(new <<REQUEST_TYPE>>());
   }
 """
 
   val simpleTemplate = """
+  @Override
   public Observable<ServiceResult<<<RESULT_TYPE>>>> <<METHOD_NAME>>(
     final <<REQUEST_TYPE>> request
   ) {
@@ -385,13 +441,25 @@ public class <<CLASSNAME>> extends AmazonRxNettyHttpClient {
   }
 """
 
+  val voidITemplateNoArgs = """
+  public Observable<ServiceResult<<<RESULT_TYPE>>>> <<METHOD_NAME>>();
+"""
+
+  val voidITemplate = """
+  public Observable<ServiceResult<<<RESULT_TYPE>>>> <<METHOD_NAME>>(
+    <<REQUEST_TYPE>> request
+  );
+"""
+
   val voidTemplateNoArgs = """
+  @Override
   public Observable<ServiceResult<<<RESULT_TYPE>>>> <<METHOD_NAME>>()
     return <<METHOD_NAME>>(new <<REQUEST_TYPE>>());
   }
 """
 
   val voidTemplate = """
+  @Override
   public Observable<ServiceResult<<<RESULT_TYPE>>>> <<METHOD_NAME>>(
     final <<REQUEST_TYPE>> request
   ) {
@@ -413,6 +481,10 @@ public class <<CLASSNAME>> extends AmazonRxNettyHttpClient {
       });
     });
   }
+"""
+
+  val iFooterTemplate = """
+}
 """
 
   val footerTemplate = """
