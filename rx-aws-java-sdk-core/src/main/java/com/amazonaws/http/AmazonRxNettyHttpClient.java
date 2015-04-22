@@ -61,10 +61,12 @@ import java.security.MessageDigest;
 
 abstract public class AmazonRxNettyHttpClient extends AmazonWebServiceClient {
 
+/**
   private static final String HMAC_SHA_256 = "HmacSHA256";
   private static final String SHA_256 = "SHA-256";
   private static final Mac MAC_HMAC_SHA_256;
   private static final MessageDigest MESSAGE_DIGEST_SHA_256;
+*/
   private static final Map<String,HttpClient<ByteBuf,ByteBuf>> CLIENTS =
     new ConcurrentHashMap<String,HttpClient<ByteBuf,ByteBuf>>();
 
@@ -77,6 +79,7 @@ abstract public class AmazonRxNettyHttpClient extends AmazonWebServiceClient {
       return null;
   }
 
+/**
   static {
     try {
       MAC_HMAC_SHA_256 = Mac.getInstance(HMAC_SHA_256);
@@ -86,6 +89,7 @@ abstract public class AmazonRxNettyHttpClient extends AmazonWebServiceClient {
       throw new RuntimeException(e);
     }
   }
+*/
 
   private AWSCredentialsProvider awsCredentialsProvider;
 
@@ -112,6 +116,7 @@ abstract public class AmazonRxNettyHttpClient extends AmazonWebServiceClient {
 
   abstract protected void init();
 
+/**
   private byte[] hmacSHA256(String data, byte[] key) {
     try {
       Mac mac = (Mac) MAC_HMAC_SHA_256.clone();
@@ -155,6 +160,7 @@ abstract public class AmazonRxNettyHttpClient extends AmazonWebServiceClient {
       throw new RuntimeException(e);
     }
   }
+*/
 
   private <Y> Observable<Long> getBackoffStrategyDelay(Request<Y> request, int cnt, AmazonClientException error) {
       if (cnt == 0) return Observable.just(0L);
@@ -198,7 +204,10 @@ abstract public class AmazonRxNettyHttpClient extends AmazonWebServiceClient {
     final AtomicInteger cnt = new AtomicInteger(0);
 
     return Observable.<X,String>using(
-      () -> { return ""; },
+      () -> {
+        if (cnt.get() == 0) prepareRequest(request, executionContext);
+        return "";
+      },
       (ignore) -> {
         assert(cnt.get() == 0 || error.get() != null);
         if (cnt.get() == 0 || (cnt.get() < clientConfiguration.getRetryPolicy().getMaxErrorRetry() && clientConfiguration.getRetryPolicy().getRetryCondition().shouldRetry(request.getOriginalRequest(), error.get(), cnt.get()))) {
@@ -215,8 +224,9 @@ abstract public class AmazonRxNettyHttpClient extends AmazonWebServiceClient {
             error.set(null);
           })
           .onErrorResumeNext(t -> {
-            error.set((AmazonClientException) t);
-            return Observable.just((X) null);
+            if (t instanceof AmazonClientException) error.set((AmazonClientException) t);
+            else error.set(new AmazonClientException(t));
+            return Observable.empty();
           });
         }
         else return Observable.<X>error(error.get());
@@ -226,25 +236,28 @@ abstract public class AmazonRxNettyHttpClient extends AmazonWebServiceClient {
       }
     )
     .repeat()
-    .filter((v) -> {
-       return v != null;
-    })
     .first();
   }
 
-  protected <X,Y extends AmazonWebServiceRequest> Observable<X> invokeImpl(
+  protected <Y extends AmazonWebServiceRequest> void prepareRequest(
     Request<Y> request,
-    RxNettyResponseHandler<AmazonWebServiceResponse<X>> responseHandler,
-    RxNettyResponseHandler<AmazonServiceException> errorResponseHandler,
     ExecutionContext executionContext
-  ) throws java.io.UnsupportedEncodingException {
+  ) {
+
+    if (request.getContent() == null) {
+      try { request.setContent(new com.amazonaws.util.StringInputStream("")); }
+      catch (java.io.UnsupportedEncodingException ex) { throw new RuntimeException(ex); }
+    }
+
     request.setEndpoint(endpoint);
     request.setTimeOffset(timeOffset);
+    request.addHeader("User-agent", "rx-"+clientConfiguration.getUserAgent());
+    request.addHeader("Accept-encoding", "gzip");
     AmazonWebServiceRequest originalRequest = request.getOriginalRequest();
 
-    for (Map.Entry<String,String> e : originalRequest.copyPrivateRequestParameters().entrySet()) {
+    originalRequest.copyPrivateRequestParameters().entrySet().stream().forEach(e -> {
       request.addParameter(e.getKey(), e.getValue());
-    }
+    });
 
     AWSCredentials credentials = request.getOriginalRequest().getRequestCredentials();
     if (credentials == null) {
@@ -253,83 +266,53 @@ abstract public class AmazonRxNettyHttpClient extends AmazonWebServiceClient {
 
     executionContext.setCredentials(credentials);
 
-// execute
     ProgressListener listener = originalRequest.getGeneralProgressListener();
+
     if (originalRequest.getCustomRequestHeaders() != null) {
       request.getHeaders().putAll(originalRequest.getCustomRequestHeaders());
     }
 
-// new
-    long startTime = System.currentTimeMillis();
-    String method = "POST";
-    String version = "2014-10-01";
-    String service = request.getServiceName().substring(6).toLowerCase();
-    if (service.endsWith("v2")) service = service.substring(0, service.length() - 2);
-    String host = endpoint.getHost();
-    String region = AwsHostNameUtils.parseRegionName(host, service);
+    String serviceName = request.getServiceName().substring(6).toLowerCase();
+    if (serviceName.endsWith("v2")) serviceName = serviceName.substring(0, serviceName.length() - 2);
+    String hostName = endpoint.getHost();
+    String regionName = AwsHostNameUtils.parseRegionName(hostName, serviceName);
 
-    StringBuffer sb = new StringBuffer();
-    for (Map.Entry<String,String> e : request.getParameters().entrySet()) {
-      if (sb.length() > 0) sb.append("&");
-      sb.append(e.getKey()).append("=").append(URLEncoder.encode(e.getValue(), "UTF-8"));
-    }
-    String canonicalQuerystring = sb.toString();
-    String content = (request.getContent() == null) ? "" : ((StringInputStream) request.getContent()).getString();
+    Signer signer = SignerFactory.getSigner(serviceName, regionName);
+    signer.sign(request, credentials);
+  }
 
-    String accessKey = credentials.getAWSAccessKeyId();
-    String secretKey = credentials.getAWSSecretKey();
+  protected <X,Y extends AmazonWebServiceRequest> Observable<X> invokeImpl(
+    Request<Y> request,
+    RxNettyResponseHandler<AmazonWebServiceResponse<X>> responseHandler,
+    RxNettyResponseHandler<AmazonServiceException> errorResponseHandler,
+    ExecutionContext executionContext
+  ) throws java.io.UnsupportedEncodingException {
 
-    String amzDate = ISODateTimeFormat.basicDateTimeNoMillis().withZoneUTC().print(startTime);
-    String datestamp  = ISODateTimeFormat.basicDate().withZoneUTC().print(startTime);
+    String path = request.getResourcePath();
+    if (path == null || path.length() == 0) path = "/";
 
-    Map<String,String> headers = new ConcurrentHashMap<String,String>();
-    headers.put("Accept-encoding", "gzip");
-    headers.put("Host",  host);
-    headers.put("X-Amz-Date", amzDate);
-    if (credentials instanceof AWSSessionCredentials)
-      headers.put("x-amz-security-token", ((AWSSessionCredentials) credentials).getSessionToken());
+    boolean useQueryString = !SdkHttpUtils.usePayloadForQueryParameters(request);
+    String queryString = SdkHttpUtils.encodeParameters(request);
+    if (queryString == null || queryString.length() == 0) {}
+    else if (useQueryString) path = path + "?" + queryString;
+    
+    HttpClientRequest<ByteBuf> rxRequest = HttpClientRequest.create(
+      HttpMethod.valueOf(request.getHttpMethod().toString()),
+      path
+    );
+    HttpRequestHeaders rxHeaders = rxRequest.getHeaders();
     request.getHeaders().entrySet().stream().forEach(e -> {
-      headers.put(e.getKey(), e.getValue());
+      rxHeaders.set(e.getKey(), e.getValue());
     });
 
-    String algorithm = "AWS4-HMAC-SHA256";
-    String credentialScope = datestamp + "/" + region + "/" + service + "/aws4_request";
-    String amzCredential = URLEncoder.encode(accessKey + "/" + credentialScope, "UTF-8");
-    String canonicalHeaders = headers.entrySet().stream().sorted((e1, e2) -> {
-      return e1.getKey().toLowerCase().compareTo(e2.getKey().toLowerCase());
-    }).map(e -> {
-      return e.getKey().toLowerCase() + ":" + e.getValue() + "\n";
-    }).reduce((s1, s2) -> s1 + s2).get();
-    String signedHeaders = headers.entrySet().stream().sorted((e1, e2) -> {
-      return e1.getKey().toLowerCase().compareTo(e2.getKey().toLowerCase());
-    }).map(e -> {
-      return e.getKey().toLowerCase();
-    }).reduce((s1, s2) -> s1 + ";" + s2).get();
+    if (queryString != null && !useQueryString) {
+      rxRequest.withContent(queryString);
+    }
+    else if (request.getContent() != null) {
+      rxRequest.withContent(((StringInputStream) request.getContent()).getString());
+    }
 
-    String canonicalUri = request.getResourcePath();
-    if (canonicalUri == null || canonicalUri.length() == 0) canonicalUri = "/";
-    //String canonicalQuerystring = "";
-
-    String payloadHash = computeSHA256(content);
-    String canonicalRequest = method + "\n" + canonicalUri + "\n" + canonicalQuerystring + "\n" + canonicalHeaders + "\n" + signedHeaders + "\n" + payloadHash;
-
-    String stringToSign = algorithm + "\n" + amzDate + "\n" + credentialScope + "\n" + computeSHA256(canonicalRequest);
-
-    byte[] signingKey = getSignatureKey(secretKey, datestamp, region, service);
-    String signature = hexString(hmacSHA256(stringToSign, signingKey));
-
-    String authorizationHeader = algorithm + " Credential=" + accessKey + "/" + credentialScope + ", SignedHeaders=" + signedHeaders + ", Signature=" + signature;
-
-    String path = canonicalUri + ((canonicalQuerystring.length() == 0) ? "" : "?" + canonicalQuerystring );
-
-    HttpClientRequest<ByteBuf> rxRequest = HttpClientRequest.create(HttpMethod.valueOf(request.getHttpMethod().toString()), path);
-    HttpRequestHeaders rHeaders = rxRequest.getHeaders();
-    rHeaders.set("Authorization", authorizationHeader);
-    headers.entrySet().stream().forEach(e -> {
-      rHeaders.set(e.getKey(), e.getValue());
-    });
-    rxRequest.withContent(content);
-    return getClient(host).submit(rxRequest)
+    return getClient(endpoint.getHost()).submit(rxRequest)
     .flatMap(response -> {
       if (response.getStatus().code() / 100 == 2) {
         try {

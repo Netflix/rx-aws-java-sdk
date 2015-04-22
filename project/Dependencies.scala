@@ -2,8 +2,8 @@ import sbt._
 
 object Dependencies {
   object Versions {
-    val aws        = "1.9.16"
-    val awsMapper  = aws + ".2"
+    val aws        = "1.9.31"
+    val awsMapper  = "1.9.16.2"
     val guice      = "4.0-beta5"
     val karyon     = "2.2.0-rc.1"
     val ribbon     = "2.0.0"
