@@ -244,11 +244,6 @@ abstract public class AmazonRxNettyHttpClient extends AmazonWebServiceClient {
     ExecutionContext executionContext
   ) {
 
-    if (request.getContent() == null) {
-      try { request.setContent(new com.amazonaws.util.StringInputStream("")); }
-      catch (java.io.UnsupportedEncodingException ex) { throw new RuntimeException(ex); }
-    }
-
     request.setEndpoint(endpoint);
     request.setTimeOffset(timeOffset);
     request.addHeader("User-agent", "rx-"+clientConfiguration.getUserAgent());
@@ -288,29 +283,33 @@ abstract public class AmazonRxNettyHttpClient extends AmazonWebServiceClient {
     ExecutionContext executionContext
   ) throws java.io.UnsupportedEncodingException {
 
-    String path = request.getResourcePath();
-    if (path == null || path.length() == 0) path = "/";
+    StringBuffer sbPath = new StringBuffer();
+    if (request.getResourcePath() != null) sbPath.append(request.getResourcePath());
+    if (sbPath.length() == 0) sbPath.append("/");
 
-    boolean useQueryString = !SdkHttpUtils.usePayloadForQueryParameters(request);
+    String content = null;
+    if (request.getContent() != null)
+      content = ((StringInputStream) request.getContent()).getString();
+
     String queryString = SdkHttpUtils.encodeParameters(request);
-    if (queryString == null || queryString.length() == 0) {}
-    else if (useQueryString) path = path + "?" + queryString;
-    
+    if (SdkHttpUtils.usePayloadForQueryParameters(request)) {
+      request.addHeader("Content-Type", "application/x-www-form-urlencoded; charset=utf-8");
+      content = queryString;
+    }
+    else if (queryString != null) {
+      sbPath.append("?").append(queryString);
+    }
+
     HttpClientRequest<ByteBuf> rxRequest = HttpClientRequest.create(
       HttpMethod.valueOf(request.getHttpMethod().toString()),
-      path
+      sbPath.toString()
     );
     HttpRequestHeaders rxHeaders = rxRequest.getHeaders();
     request.getHeaders().entrySet().stream().forEach(e -> {
       rxHeaders.set(e.getKey(), e.getValue());
     });
 
-    if (queryString != null && !useQueryString) {
-      rxRequest.withContent(queryString);
-    }
-    else if (request.getContent() != null) {
-      rxRequest.withContent(((StringInputStream) request.getContent()).getString());
-    }
+    if (content != null) rxRequest.withContent(content);
 
     return getClient(endpoint.getHost()).submit(rxRequest)
     .flatMap(response -> {

@@ -581,7 +581,8 @@ object MainBuild extends Build {
 
   lazy val commonDeps = Seq(
     Dependencies.junitInterface % "test",
-    Dependencies.scalatest % "test"
+    Dependencies.scalatest % "test",
+    Dependencies.slf4jBinding % "test"
   )
 
   lazy val checkLicenseHeaders = taskKey[Unit]("Check the license headers for all source files.")
