@@ -130,8 +130,8 @@ object AwsGenerate {
     }).toList.sortBy(_.toString)
   }
   def mkContent(c: ClientInfo): (String, String) = (
-    mkIHeader(c) + mkBody(c, true).mkString("\n") + mkIFooter(c),
-    mkHeader(c) + mkBody(c).mkString("\n") + mkFooter(c)
+    mkIHeader(c) + mkBody(c, true).mkString("\n") + mkIExtraMethods(c) + mkIFooter(c),
+    mkHeader(c) + mkBody(c).mkString("\n") + mkExtraMethods(c) + mkFooter(c)
   )
 
   def mkIHeader(c: ClientInfo): String = {
@@ -469,42 +469,87 @@ public class <<CLASSNAME>> extends AmazonRxNettyHttpClient implements <<IFACENAM
 """
 
   val voidTemplateNoArgs = """
-  @Override
-  public Observable<ServiceResult<<<RESULT_TYPE>>>> <<METHOD_NAME>>()
-    return <<METHOD_NAME>>(new <<REQUEST_TYPE>>());
-  }
-"""
+    |  @Override
+    |  public Observable<ServiceResult<<<RESULT_TYPE>>>> <<METHOD_NAME>>()
+    |    return <<METHOD_NAME>>(new <<REQUEST_TYPE>>());
+    |  }
+    |""".stripMargin
 
   val voidTemplate = """
-  @Override
-  public Observable<ServiceResult<<<RESULT_TYPE>>>> <<METHOD_NAME>>(
-    final <<REQUEST_TYPE>> request
-  ) {
-    return Observable.just(request)
-    .flatMap(r -> {
-      long startTime = System.currentTimeMillis();
-      ExecutionContext executionContext = createExecutionContext(request);
-      AWSRequestMetrics awsRequestMetrics = executionContext.getAwsRequestMetrics();
-      return Observable.just(0).map(i -> {
-        return new <<REQUEST_TYPE>>Marshaller().marshall(r);
-      })
-      .flatMap(mReq -> {
-        mReq.setAWSRequestMetrics(awsRequestMetrics);
-        Unmarshaller<Void,<<TYPE_UNMARSHALLER>>UnmarshallerContext> unmarshaller = (Unmarshaller<Void,<<TYPE_UNMARSHALLER>>UnmarshallerContext>) null;
-        return invoke<<TYPE_UNMARSHALLER>>(mReq, unmarshaller, exceptionUnmarshallers, executionContext);
-      })
-      .map(result -> {
-        return new ServiceResult<<<RESULT_TYPE>>>(startTime, result);
-      });
-    });
-  }
-"""
+    |  @Override
+    |  public Observable<ServiceResult<<<RESULT_TYPE>>>> <<METHOD_NAME>>(
+    |    final <<REQUEST_TYPE>> request
+    |  ) {
+    |    return Observable.just(request)
+    |    .flatMap(r -> {
+    |      long startTime = System.currentTimeMillis();
+    |      ExecutionContext executionContext = createExecutionContext(request);
+    |      AWSRequestMetrics awsRequestMetrics = executionContext.getAwsRequestMetrics();
+    |      return Observable.just(0).map(i -> {
+    |        return new <<REQUEST_TYPE>>Marshaller().marshall(r);
+    |      })
+    |      .flatMap(mReq -> {
+    |        mReq.setAWSRequestMetrics(awsRequestMetrics);
+    |        Unmarshaller<Void,<<TYPE_UNMARSHALLER>>UnmarshallerContext> unmarshaller = (Unmarshaller<Void,<<TYPE_UNMARSHALLER>>UnmarshallerContext>) null;
+    |        return invoke<<TYPE_UNMARSHALLER>>(mReq, unmarshaller, exceptionUnmarshallers, executionContext);
+    |      })
+    |      .map(result -> {
+    |        return new ServiceResult<<<RESULT_TYPE>>>(startTime, result);
+    |      });
+    |    });
+    |  }
+    |""".stripMargin
 
   val iFooterTemplate = """
-}
-"""
+    |}
+    |""".stripMargin
 
   val footerTemplate = """
-}
-"""
+    |}
+    |""".stripMargin
+
+  def mkIExtraMethods(c: ClientInfo): String = {
+    extraMethods.get(c.name.toLowerCase).map(_.head).getOrElse("")
+  }
+
+  def mkExtraMethods(c: ClientInfo): String = {
+    extraMethods.get(c.name.toLowerCase).map(_.last).getOrElse("")
+  }
+
+  val extraMethods = Map(
+    "elasticloadbalancing" -> List(
+      """
+      |  public Observable<NamedServiceResult<DescribeInstanceHealthResult>> describeInstanceHealth();
+      |
+      |  public Observable<NamedServiceResult<DescribeLoadBalancerAttributesResult>> describeLoadBalancerAttributes();
+      |""".stripMargin,
+      """
+      |  public Observable<NamedServiceResult<DescribeInstanceHealthResult>> describeInstanceHealth() {
+      |    return describeLoadBalancers().flatMap(r0 -> {
+      |      return Observable.from(r0.result.getLoadBalancerDescriptions());
+      |    }).flatMap(elb -> {
+      |      String elbName = elb.getLoadBalancerName();
+      |      return describeInstanceHealth(
+      |        new DescribeInstanceHealthRequest().withLoadBalancerName(elbName)
+      |      ).map(r1 -> {
+      |        return new NamedServiceResult<DescribeInstanceHealthResult>(r1.startTime, elbName, r1.result);
+      |      });
+      |    });
+      |  }
+      |
+      |  public Observable<NamedServiceResult<DescribeLoadBalancerAttributesResult>> describeLoadBalancerAttributes() {
+      |    return describeLoadBalancers().flatMap(r0 -> {
+      |      return Observable.from(r0.result.getLoadBalancerDescriptions());
+      |    }).flatMap(elb -> {
+      |      String elbName = elb.getLoadBalancerName();
+      |      return describeLoadBalancerAttributes(
+      |        new DescribeLoadBalancerAttributesRequest().withLoadBalancerName(elbName)
+      |      ).map(r1 -> {
+      |        return new NamedServiceResult<DescribeLoadBalancerAttributesResult>(r1.startTime, elbName, r1.result);
+      |      });
+      |    });
+      |  }
+      |""".stripMargin
+    )
+  )
 }

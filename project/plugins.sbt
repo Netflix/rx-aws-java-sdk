@@ -1,5 +1,7 @@
 libraryDependencies += "com.google.guava" % "guava" % "18.0"
+
 libraryDependencies += "com.github.javaparser" % "javaparser-core" % "2.0.0"
+
 libraryDependencies += "com.amazonaws" % "aws-java-sdk" % "1.9.31" //withSources()
 
 addSbtPlugin("com.typesafe.sbt" % "sbt-pgp" % "0.8.3")
