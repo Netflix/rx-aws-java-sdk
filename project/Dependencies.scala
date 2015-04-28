@@ -2,16 +2,16 @@ import sbt._
 
 object Dependencies {
   object Versions {
-    val aws        = "1.9.31"
-    val awsMapper  = "1.9.16.2"
+    val aws        = "1.9.33"
+    val awsMapper  = "1.9.33.0"
     val guice      = "4.0-beta5"
     val karyon     = "2.2.0-rc.1"
     val ribbon     = "2.0.0"
-    val rxj        = "1.0.8"
+    val rxj        = "1.0.9"
     val rxnetty    = "0.4.8.1"
     val scala      = "2.11.6"
     val slf4j      = "1.7.10"
-    val spectator  = "0.20.0"
+    val spectator  = "0.24.0"
   }
 
   import Versions._
