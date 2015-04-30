@@ -368,7 +368,7 @@ abstract public class AmazonRxNettyHttpClient extends AmazonWebServiceClient {
         .channelOption(ChannelOption.CONNECT_TIMEOUT_MILLIS, clientConfiguration.getConnectionTimeout())
         .withMaxConnections(clientConfiguration.getMaxConnections())
         .withIdleConnectionsTimeoutMillis(clientConfiguration.getConnectionTTL())
-        .enableWireLogging(LogLevel.ERROR)
+        //.enableWireLogging(LogLevel.ERROR)
         .withSslEngineFactory((isSecure) ? DefaultFactories.trustAll() : null)
         .pipelineConfigurator(
           new PipelineConfiguratorComposite<HttpClientResponse<ByteBuf>,HttpClientRequest<ByteBuf>>(
