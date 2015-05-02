@@ -550,6 +550,23 @@ public class <<CLASSNAME>> extends AmazonRxNettyHttpClient implements <<IFACENAM
       |    });
       |  }
       |""".stripMargin
+    ),
+    "route53" -> List(
+      """
+      |  public Observable<PaginatedServiceResult<ListResourceRecordSetsResult>> listResourceRecordSets();
+      |""".stripMargin,
+      """
+      |  public Observable<PaginatedServiceResult<ListResourceRecordSetsResult>> listResourceRecordSets() {
+      |    return listHostedZones().reduce(new ArrayList<String>(), (acc, r) -> {
+      |      r.result.getHostedZones().stream().forEach(h -> acc.add(h.getId()));
+      |      return acc;
+      |    })
+      |    .flatMap(list -> Observable.from(list))
+      |    .flatMap(id -> {
+      |      return listResourceRecordSets(new ListResourceRecordSetsRequest().withHostedZoneId(id));
+      |    });
+      |}
+      |""".stripMargin
     )
   )
 }
