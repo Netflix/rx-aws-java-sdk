@@ -19,12 +19,16 @@ import io.netty.handler.codec.http.HttpMethod;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.netty.channel.ChannelOption;
 import io.netty.channel.ChannelPipeline;
+import io.netty.channel.ChannelDuplexHandler;
+import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.http.HttpContentDecompressor;
 import iep.io.reactivex.netty.RxNetty;
+import iep.io.reactivex.netty.client.PooledConnectionReleasedEvent;
 import iep.io.reactivex.netty.protocol.http.AbstractHttpConfigurator;
 import iep.io.reactivex.netty.protocol.http.server.HttpServerRequest;
 import iep.io.reactivex.netty.protocol.http.server.HttpServerResponse;
 import iep.io.reactivex.netty.protocol.http.server.HttpResponseHeaders;
+import iep.io.reactivex.netty.protocol.http.client.ClientRequestResponseConverter;
 import iep.io.reactivex.netty.protocol.http.client.HttpClient;
 import iep.io.reactivex.netty.protocol.http.client.HttpClient.HttpClientConfig;
 import iep.io.reactivex.netty.protocol.http.client.HttpClientRequest;
@@ -367,7 +371,7 @@ abstract public class AmazonRxNettyHttpClient extends AmazonWebServiceClient {
         .config(config)
         .channelOption(ChannelOption.CONNECT_TIMEOUT_MILLIS, clientConfiguration.getConnectionTimeout())
         .withMaxConnections(clientConfiguration.getMaxConnections())
-        .withIdleConnectionsTimeoutMillis(clientConfiguration.getConnectionTTL())
+        .withIdleConnectionsTimeoutMillis(60000)
         //.enableWireLogging(LogLevel.ERROR)
         .withSslEngineFactory((isSecure) ? DefaultFactories.trustAll() : null)
         .pipelineConfigurator(
@@ -375,6 +379,9 @@ abstract public class AmazonRxNettyHttpClient extends AmazonWebServiceClient {
             new HttpClientPipelineConfigurator<ByteBuf,ByteBuf>(),
             new HttpDecompressionConfigurator()
           )
+        )
+        .appendPipelineConfigurator(
+          pipeline -> pipeline.addLast(new ActiveLifeTracker(clientConfiguration.getConnectionTTL()))
         )
         .build();
       CLIENTS.putIfAbsent(key, client);
@@ -386,6 +393,32 @@ abstract public class AmazonRxNettyHttpClient extends AmazonWebServiceClient {
     @Override
     public void configureNewPipeline(ChannelPipeline pipeline) {
       pipeline.addLast("deflater", new HttpContentDecompressor());
+    }
+  }
+
+  private static class ActiveLifeTracker extends ChannelDuplexHandler {
+    private long activationTime;
+    private long ttl;
+
+    public ActiveLifeTracker(long ttl) {
+      this.ttl = ttl;
+    }
+
+    @Override
+    public void channelActive(ChannelHandlerContext ctx) throws Exception {
+      activationTime = System.currentTimeMillis();
+      super.channelActive(ctx);
+    }
+
+    @Override
+    public void userEventTriggered(ChannelHandlerContext ctx, Object evt) throws Exception {
+      if (evt instanceof PooledConnectionReleasedEvent) {
+        long timeActive = System.currentTimeMillis() - activationTime;
+        if (ttl >= 0 && timeActive > ttl) {
+          ctx.channel().attr(ClientRequestResponseConverter.DISCARD_CONNECTION).set(true);
+        }
+      }
+      super.userEventTriggered(ctx, evt);
     }
   }
 }
