@@ -295,8 +295,8 @@ abstract public class AmazonRxNettyHttpClient extends AmazonWebServiceClient {
     if (request.getContent() != null)
       content = ((StringInputStream) request.getContent()).getString();
 
-    String queryString = SdkHttpUtils.encodeParameters(request);
-    if (SdkHttpUtils.usePayloadForQueryParameters(request)) {
+    String queryString = RxSdkHttpUtils.encodeParameters(request);
+    if (RxSdkHttpUtils.usePayloadForQueryParameters(request)) {
       request.addHeader("Content-Type", "application/x-www-form-urlencoded; charset=utf-8");
       content = queryString;
     }
