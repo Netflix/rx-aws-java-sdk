@@ -147,7 +147,7 @@ public class RxSdkHttpUtils {
 
         String encodedParams = null;
         if (nameValuePairs != null) {
-            encodedParams = URLEncodedUtils.format(nameValuePairs, DEFAULT_CHARSET);
+            encodedParams = RxURLEncodedUtils.format(nameValuePairs, DEFAULT_CHARSET);
         }
 
         return encodedParams;

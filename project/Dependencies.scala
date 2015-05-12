@@ -55,7 +55,7 @@ object Dependencies {
   val equalsVerifier  = "nl.jqno.equalsverifier" % "equalsverifier" % "1.5.1"
   val eureka          = "com.netflix.eureka" % "eureka-client" % "1.1.150"
   val governator      = "com.netflix.governator" % "governator" % "1.3.3"
-  val guava           = "com.google.guava" % "gauva" % "73.0"
+  val guava           = "com.google.guava" % "guava" % "18.0"
   val guiceAssist     = "com.google.inject.extensions" % "guice-assistedinject" % guice
   val guiceCore       = "com.google.inject" % "guice" % guice
   val guiceGrapher    = "com.google.inject.extensions" % "guice-grapher" % guice

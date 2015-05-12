@@ -67,6 +67,7 @@ object MainBuild extends Build {
     .settings(libraryDependencies ++= commonDeps)
     .settings(libraryDependencies ++= Seq(
       Dependencies.awsCore,
+      Dependencies.guava,
       Dependencies.jzlib,
       Dependencies.rxjava,
       Dependencies.rxnettyCore,
