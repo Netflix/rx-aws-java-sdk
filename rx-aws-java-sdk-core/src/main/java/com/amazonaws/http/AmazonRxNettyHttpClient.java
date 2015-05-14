@@ -12,6 +12,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import rx.Observable;
+import rx.schedulers.Schedulers;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.handler.logging.LogLevel;
@@ -319,7 +320,9 @@ abstract public class AmazonRxNettyHttpClient extends AmazonWebServiceClient {
     .flatMap(response -> {
       if (response.getStatus().code() / 100 == 2) {
         try {
-          return responseHandler.handle(response).map(r -> { return r.getResult(); });
+          return responseHandler.handle(response)
+            .map(r -> { return r.getResult(); })
+            .subscribeOn(Schedulers.computation());
         }
         catch (Exception e) {
           return Observable.error(e);
