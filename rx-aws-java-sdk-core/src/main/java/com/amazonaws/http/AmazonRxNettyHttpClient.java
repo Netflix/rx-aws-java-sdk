@@ -12,6 +12,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import rx.Observable;
+import rx.schedulers.Schedulers;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.handler.logging.LogLevel;
@@ -207,15 +208,19 @@ abstract public class AmazonRxNettyHttpClient extends AmazonWebServiceClient {
     final AtomicReference<AmazonClientException> error = new AtomicReference<AmazonClientException>(null);
     final AtomicInteger cnt = new AtomicInteger(0);
 
-    return Observable.<X,String>using(
+    return Observable.<X,Boolean>using(
       () -> {
-        if (cnt.get() == 0) prepareRequest(request, executionContext);
-        return "";
+        if (cnt.get() == 0) return Boolean.valueOf(false);
+        return Boolean.valueOf(true);
       },
-      (ignore) -> {
+      (isPrepared) -> {
         assert(cnt.get() == 0 || error.get() != null);
         if (cnt.get() == 0 || (cnt.get() < clientConfiguration.getRetryPolicy().getMaxErrorRetry() && clientConfiguration.getRetryPolicy().getRetryCondition().shouldRetry(request.getOriginalRequest(), error.get(), cnt.get()))) {
-          return getBackoffStrategyDelay(request, cnt.get(), error.get())
+          return Observable.defer(() -> {
+            if (isPrepared) return Observable.just(null);
+            return  prepareRequest(request, executionContext).subscribeOn(Schedulers.computation());
+          })
+          .flatMap(v -> { return getBackoffStrategyDelay(request, cnt.get(), error.get()); })
           .flatMap(i -> {
             try {
               return invokeImpl(request, responseHandler, errorResponseHandler, executionContext);
@@ -235,7 +240,7 @@ abstract public class AmazonRxNettyHttpClient extends AmazonWebServiceClient {
         }
         else return Observable.<X>error(error.get());
       },
-      (ignore) -> {
+      (isPrepared) -> {
         cnt.getAndIncrement();
       }
     )
@@ -243,41 +248,44 @@ abstract public class AmazonRxNettyHttpClient extends AmazonWebServiceClient {
     .first();
   }
 
-  protected <Y extends AmazonWebServiceRequest> void prepareRequest(
+  protected <Y extends AmazonWebServiceRequest> Observable<Void> prepareRequest(
     Request<Y> request,
     ExecutionContext executionContext
   ) {
+    return Observable.defer(() -> {
+      request.setEndpoint(endpoint);
+      request.setTimeOffset(timeOffset);
+      request.addHeader("User-agent", "rx-"+clientConfiguration.getUserAgent());
+      request.addHeader("Accept-encoding", "gzip");
+      AmazonWebServiceRequest originalRequest = request.getOriginalRequest();
 
-    request.setEndpoint(endpoint);
-    request.setTimeOffset(timeOffset);
-    request.addHeader("User-agent", "rx-"+clientConfiguration.getUserAgent());
-    request.addHeader("Accept-encoding", "gzip");
-    AmazonWebServiceRequest originalRequest = request.getOriginalRequest();
+      originalRequest.copyPrivateRequestParameters().entrySet().stream().forEach(e -> {
+        request.addParameter(e.getKey(), e.getValue());
+      });
 
-    originalRequest.copyPrivateRequestParameters().entrySet().stream().forEach(e -> {
-      request.addParameter(e.getKey(), e.getValue());
+      AWSCredentials credentials = request.getOriginalRequest().getRequestCredentials();
+      if (credentials == null) {
+        credentials = awsCredentialsProvider.getCredentials();
+      }
+
+      executionContext.setCredentials(credentials);
+
+      ProgressListener listener = originalRequest.getGeneralProgressListener();
+
+      if (originalRequest.getCustomRequestHeaders() != null) {
+        request.getHeaders().putAll(originalRequest.getCustomRequestHeaders());
+      }
+
+      String serviceName = request.getServiceName().substring(6).toLowerCase();
+      if (serviceName.endsWith("v2"))
+        serviceName = serviceName.substring(0, serviceName.length() - 2);
+      String hostName = endpoint.getHost();
+      String regionName = AwsHostNameUtils.parseRegionName(hostName, serviceName);
+
+      Signer signer = SignerFactory.getSigner(serviceName, regionName);
+      signer.sign(request, credentials);
+      return Observable.<Void>just(null);
     });
-
-    AWSCredentials credentials = request.getOriginalRequest().getRequestCredentials();
-    if (credentials == null) {
-      credentials = awsCredentialsProvider.getCredentials();
-    }
-
-    executionContext.setCredentials(credentials);
-
-    ProgressListener listener = originalRequest.getGeneralProgressListener();
-
-    if (originalRequest.getCustomRequestHeaders() != null) {
-      request.getHeaders().putAll(originalRequest.getCustomRequestHeaders());
-    }
-
-    String serviceName = request.getServiceName().substring(6).toLowerCase();
-    if (serviceName.endsWith("v2")) serviceName = serviceName.substring(0, serviceName.length() - 2);
-    String hostName = endpoint.getHost();
-    String regionName = AwsHostNameUtils.parseRegionName(hostName, serviceName);
-
-    Signer signer = SignerFactory.getSigner(serviceName, regionName);
-    signer.sign(request, credentials);
   }
 
   protected <X,Y extends AmazonWebServiceRequest> Observable<X> invokeImpl(
