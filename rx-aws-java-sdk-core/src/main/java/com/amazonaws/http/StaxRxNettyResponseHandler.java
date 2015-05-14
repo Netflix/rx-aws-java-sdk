@@ -96,30 +96,18 @@ public class StaxRxNettyResponseHandler<T> implements RxNettyResponseHandler<Ama
           }
         }
       )
-      .map(new Func1<ByteArrayOutputStream,ByteArrayInputStream>() {
-        @Override
-        public ByteArrayInputStream call(ByteArrayOutputStream out) {
+      .flatMap(out -> {
+        return Observable.defer(() -> {
           byte[] bytes = out.toByteArray();
           if (bytes.length == 0) bytes = "<eof/>".getBytes();
-          return new ByteArrayInputStream(bytes);
-        }
-      })
-      .map(new Func1<ByteArrayInputStream,XMLEventReader>() {
-        @Override
-        public XMLEventReader call(ByteArrayInputStream in) {
-          synchronized (xmlInputFactory) {
-            try {
-              return xmlInputFactory.createXMLEventReader(in);
-            }
-            catch (XMLStreamException e) {
-              throw new RuntimeException(e);
-            }
+          ByteArrayInputStream in = new ByteArrayInputStream(bytes);
+          XMLEventReader reader = null;
+          try {
+            reader = xmlInputFactory.createXMLEventReader(in);
           }
-        }
-      })
-      .map(new Func1<XMLEventReader,AmazonWebServiceResponse<T>>() {
-        @Override
-        public AmazonWebServiceResponse<T> call(XMLEventReader eventReader) {
+          catch (XMLStreamException e) {
+            throw new RuntimeException(e);
+          }
           try {
             Map<String, String> responseHeaders = new HashMap<String,String>();
             for (String k : response.getHeaders().names()) {
@@ -127,7 +115,7 @@ public class StaxRxNettyResponseHandler<T> implements RxNettyResponseHandler<Ama
               responseHeaders.put(k, response.getHeaders().get(k));
             }
             AmazonWebServiceResponse<T> awsResponse = new AmazonWebServiceResponse<T>();
-            StaxUnmarshallerContext unmarshallerContext = new StaxUnmarshallerContext(eventReader, responseHeaders);
+            StaxUnmarshallerContext unmarshallerContext = new StaxUnmarshallerContext(reader, responseHeaders);
             unmarshallerContext.registerMetadataExpression("ResponseMetadata/RequestId", 2, ResponseMetadata.AWS_REQUEST_ID);
             unmarshallerContext.registerMetadataExpression("requestId", 2, ResponseMetadata.AWS_REQUEST_ID);
             registerAdditionalMetadataExpressions(unmarshallerContext);
@@ -143,19 +131,20 @@ public class StaxRxNettyResponseHandler<T> implements RxNettyResponseHandler<Ama
             }
             awsResponse.setResponseMetadata(new ResponseMetadata(metadata));
 
-            return awsResponse;
+            return Observable.just(awsResponse);
           }
           catch (Exception e) {
             throw new RuntimeException(e);
           }
           finally {
             try {
-              eventReader.close();
+              reader.close();
             } catch (XMLStreamException e) {
               log.warn("Error closing xml parser", e);
             }
           }
-        }
+        })
+        .subscribeOn(rx.schedulers.Schedulers.computation());
       });
     }
 
