@@ -1,18 +1,3 @@
-/**
- * Copyright 2014 Netflix, Inc.
- * 
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- * 
- * http://www.apache.org/licenses/LICENSE-2.0
- * 
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
 package com.amazonaws.util;
 
 import java.util.concurrent.*;
@@ -24,15 +9,9 @@ import rx.subscriptions.*;
 import rx.internal.schedulers.*;
 
 public class EventLoopsScheduler extends Scheduler {
-    /** Manages a fixed number of workers. */
     private static final String THREAD_NAME_PREFIX = "RxAmazonAWSThreadPool-";
     private static final RxThreadFactory THREAD_FACTORY = new RxThreadFactory(THREAD_NAME_PREFIX);
-    /** 
-     * Key to setting the maximum number of computation scheduler threads.
-     * Zero or less is interpreted as use available. Capped by available.
-     */
     static final String KEY_MAX_THREADS = "rx.scheduler.max-computation-threads";
-    /** The maximum number of computation scheduler threads. */
     static final int MAX_THREADS;
 
     static {
@@ -53,7 +32,6 @@ public class EventLoopsScheduler extends Scheduler {
         long n;
 
         FixedSchedulerPool() {
-            // initialize event loops
             this.cores = MAX_THREADS;
             this.eventLoops = new PoolWorker[cores];
             for (int i = 0; i < cores; i++) {
@@ -62,17 +40,12 @@ public class EventLoopsScheduler extends Scheduler {
         }
 
         public PoolWorker getEventLoop() {
-            // simple round robin, improvements to come
             return eventLoops[(int)(n++ % cores)];
         }
     }
 
     final FixedSchedulerPool pool;
     
-    /**
-     * Create a scheduler with pool size equal to the available processor
-     * count and using least-recent worker selection policy.
-     */
     public EventLoopsScheduler() {
         pool = new FixedSchedulerPool();
     }
@@ -82,12 +55,6 @@ public class EventLoopsScheduler extends Scheduler {
         return new EventLoopWorker(pool.getEventLoop());
     }
     
-    /**
-     * Schedules the action directly on one of the event loop workers
-     * without the additional infrastructure and checking.
-     * @param action the action to schedule
-     * @return the subscription
-     */
     public Subscription scheduleDirect(Action0 action) {
        PoolWorker pw = pool.getEventLoop();
        return pw.scheduleActual(action, -1, TimeUnit.NANOSECONDS);
