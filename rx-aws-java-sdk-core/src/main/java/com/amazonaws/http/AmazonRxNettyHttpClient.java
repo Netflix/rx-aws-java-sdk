@@ -220,6 +220,7 @@ abstract public class AmazonRxNettyHttpClient extends AmazonWebServiceClient {
             if (isPrepared) return Observable.just(null);
             return  prepareRequest(request, executionContext).subscribeOn(Schedulers.computation());
           })
+          .subscribeOn(RxSchedulers.computation())
           .flatMap(v -> { return getBackoffStrategyDelay(request, cnt.get(), error.get()); })
           .flatMap(i -> {
             try {
@@ -245,7 +246,8 @@ abstract public class AmazonRxNettyHttpClient extends AmazonWebServiceClient {
       }
     )
     .repeat()
-    .first();
+    .first()
+    .observeOn(RxSchedulers.computation());
   }
 
   protected <Y extends AmazonWebServiceRequest> Observable<Void> prepareRequest(
@@ -295,55 +297,61 @@ abstract public class AmazonRxNettyHttpClient extends AmazonWebServiceClient {
     ExecutionContext executionContext
   ) throws java.io.UnsupportedEncodingException {
 
-    StringBuffer sbPath = new StringBuffer();
-    if (request.getResourcePath() != null) sbPath.append(request.getResourcePath());
-    if (sbPath.length() == 0) sbPath.append("/");
+    return Observable.defer(() -> {
+      StringBuffer sbPath = new StringBuffer();
+      if (request.getResourcePath() != null) sbPath.append(request.getResourcePath());
+      if (sbPath.length() == 0) sbPath.append("/");
 
-    String content = null;
-    if (request.getContent() != null)
-      content = ((StringInputStream) request.getContent()).getString();
+      String content = null;
+      if (request.getContent() != null)
+        content = ((StringInputStream) request.getContent()).getString();
 
-    String queryString = RxSdkHttpUtils.encodeParameters(request);
-    if (RxSdkHttpUtils.usePayloadForQueryParameters(request)) {
-      request.addHeader("Content-Type", "application/x-www-form-urlencoded; charset=utf-8");
-      content = queryString;
-    }
-    else if (queryString != null) {
-      sbPath.append("?").append(queryString);
-    }
-
-    HttpClientRequest<ByteBuf> rxRequest = HttpClientRequest.create(
-      HttpMethod.valueOf(request.getHttpMethod().toString()),
-      sbPath.toString()
-    );
-    HttpRequestHeaders rxHeaders = rxRequest.getHeaders();
-    request.getHeaders().entrySet().stream().forEach(e -> {
-      rxHeaders.set(e.getKey(), e.getValue());
-    });
-
-    if (content != null) rxRequest.withContent(content);
-
-    return getClient(endpoint.getHost()).submit(rxRequest)
-    .flatMap(response -> {
-      if (response.getStatus().code() / 100 == 2) {
-        try {
-          return responseHandler.handle(response).map(r -> { return r.getResult(); });
-        }
-        catch (Exception e) {
-          return Observable.error(e);
-        }
+      String queryString = RxSdkHttpUtils.encodeParameters(request);
+      if (RxSdkHttpUtils.usePayloadForQueryParameters(request)) {
+        request.addHeader("Content-Type", "application/x-www-form-urlencoded; charset=utf-8");
+        content = queryString;
       }
-      else {
-        try {
-          return errorResponseHandler.handle(response).flatMap(e -> {
-            e.setServiceName(request.getServiceName());
+      else if (queryString != null) {
+        sbPath.append("?").append(queryString);
+      }
+
+      HttpClientRequest<ByteBuf> rxRequest = HttpClientRequest.create(
+        HttpMethod.valueOf(request.getHttpMethod().toString()),
+        sbPath.toString()
+      );
+      HttpRequestHeaders rxHeaders = rxRequest.getHeaders();
+      request.getHeaders().entrySet().stream().forEach(e -> {
+        rxHeaders.set(e.getKey(), e.getValue());
+      });
+
+      if (content != null) rxRequest.withContent(content);
+
+      return Observable.just(rxRequest);
+    })
+    .subscribeOn(RxSchedulers.computation())
+    .flatMap(rxRequest -> {
+      return getClient(endpoint.getHost()).submit(rxRequest)
+      .flatMap(response -> {
+        if (response.getStatus().code() / 100 == 2) {
+          try {
+            return responseHandler.handle(response).map(r -> { return r.getResult(); });
+          }
+          catch (Exception e) {
             return Observable.error(e);
-          });
+          }
         }
-        catch (Exception e) {
-          return Observable.error(e);
+        else {
+          try {
+            return errorResponseHandler.handle(response).flatMap(e -> {
+              e.setServiceName(request.getServiceName());
+              return Observable.error(e);
+            });
+          }
+          catch (Exception e) {
+            return Observable.error(e);
+          }
         }
-      }
+      });
     })
     .onErrorResumeNext(t -> {
       if (t instanceof AmazonClientException) return Observable.error(t);

@@ -28,6 +28,7 @@ import com.amazonaws.AmazonServiceException;
 import com.amazonaws.transform.Unmarshaller;
 import com.amazonaws.util.IOUtils;
 import com.amazonaws.util.XpathUtils;
+import com.amazonaws.util.RxSchedulers;
 
 import rx.Observable;
 import rx.functions.*;
@@ -91,6 +92,7 @@ public class XmlRxNettyErrorResponseHandler
           }
         }
       )
+      .observeOn(RxSchedulers.computation())
       .map(new Func1<ByteArrayOutputStream,Document>() {
         @Override
         public Document call(ByteArrayOutputStream out) {

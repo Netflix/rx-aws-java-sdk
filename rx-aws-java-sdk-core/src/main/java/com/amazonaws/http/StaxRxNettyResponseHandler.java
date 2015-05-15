@@ -37,6 +37,7 @@ import com.amazonaws.ResponseMetadata;
 import com.amazonaws.transform.StaxUnmarshallerContext;
 import com.amazonaws.transform.Unmarshaller;
 import com.amazonaws.transform.VoidStaxUnmarshaller;
+import com.amazonaws.util.RxSchedulers;
 
 /**
  * Default implementation of HttpResponseHandler that handles a successful
@@ -96,55 +97,53 @@ public class StaxRxNettyResponseHandler<T> implements RxNettyResponseHandler<Ama
           }
         }
       )
+      .observeOn(RxSchedulers.computation())
       .flatMap(out -> {
-        return Observable.defer(() -> {
-          byte[] bytes = out.toByteArray();
-          if (bytes.length == 0) bytes = "<eof/>".getBytes();
-          ByteArrayInputStream in = new ByteArrayInputStream(bytes);
-          XMLEventReader reader = null;
+        byte[] bytes = out.toByteArray();
+        if (bytes.length == 0) bytes = "<eof/>".getBytes();
+        ByteArrayInputStream in = new ByteArrayInputStream(bytes);
+        XMLEventReader reader = null;
+        try {
+          reader = xmlInputFactory.createXMLEventReader(in);
+        }
+        catch (XMLStreamException e) {
+          throw new RuntimeException(e);
+        }
+        try {
+          Map<String, String> responseHeaders = new HashMap<String,String>();
+          for (String k : response.getHeaders().names()) {
+            // TODO: comma seperated?
+            responseHeaders.put(k, response.getHeaders().get(k));
+          }
+          AmazonWebServiceResponse<T> awsResponse = new AmazonWebServiceResponse<T>();
+          StaxUnmarshallerContext unmarshallerContext = new StaxUnmarshallerContext(reader, responseHeaders);
+          unmarshallerContext.registerMetadataExpression("ResponseMetadata/RequestId", 2, ResponseMetadata.AWS_REQUEST_ID);
+          unmarshallerContext.registerMetadataExpression("requestId", 2, ResponseMetadata.AWS_REQUEST_ID);
+          registerAdditionalMetadataExpressions(unmarshallerContext);
+
+          T result = responseUnmarshaller.unmarshall(unmarshallerContext);
+          awsResponse.setResult(result);
+
+          Map<String, String> metadata = unmarshallerContext.getMetadata();
+          if (responseHeaders != null) {
+            if (responseHeaders.get("x-amzn-RequestId") != null) {
+              metadata.put(ResponseMetadata.AWS_REQUEST_ID, responseHeaders.get("x-amzn-RequestId"));
+            }
+          }
+          awsResponse.setResponseMetadata(new ResponseMetadata(metadata));
+
+          return Observable.just(awsResponse);
+        }
+        catch (Exception e) {
+          throw new RuntimeException(e);
+        }
+        finally {
           try {
-            reader = xmlInputFactory.createXMLEventReader(in);
+            reader.close();
+          } catch (XMLStreamException e) {
+            log.warn("Error closing xml parser", e);
           }
-          catch (XMLStreamException e) {
-            throw new RuntimeException(e);
-          }
-          try {
-            Map<String, String> responseHeaders = new HashMap<String,String>();
-            for (String k : response.getHeaders().names()) {
-              // TODO: comma seperated?
-              responseHeaders.put(k, response.getHeaders().get(k));
-            }
-            AmazonWebServiceResponse<T> awsResponse = new AmazonWebServiceResponse<T>();
-            StaxUnmarshallerContext unmarshallerContext = new StaxUnmarshallerContext(reader, responseHeaders);
-            unmarshallerContext.registerMetadataExpression("ResponseMetadata/RequestId", 2, ResponseMetadata.AWS_REQUEST_ID);
-            unmarshallerContext.registerMetadataExpression("requestId", 2, ResponseMetadata.AWS_REQUEST_ID);
-            registerAdditionalMetadataExpressions(unmarshallerContext);
-
-            T result = responseUnmarshaller.unmarshall(unmarshallerContext);
-            awsResponse.setResult(result);
-
-            Map<String, String> metadata = unmarshallerContext.getMetadata();
-            if (responseHeaders != null) {
-              if (responseHeaders.get("x-amzn-RequestId") != null) {
-                metadata.put(ResponseMetadata.AWS_REQUEST_ID, responseHeaders.get("x-amzn-RequestId"));
-              }
-            }
-            awsResponse.setResponseMetadata(new ResponseMetadata(metadata));
-
-            return Observable.just(awsResponse);
-          }
-          catch (Exception e) {
-            throw new RuntimeException(e);
-          }
-          finally {
-            try {
-              reader.close();
-            } catch (XMLStreamException e) {
-              log.warn("Error closing xml parser", e);
-            }
-          }
-        })
-        .subscribeOn(rx.schedulers.Schedulers.computation());
+        }
       });
     }
 

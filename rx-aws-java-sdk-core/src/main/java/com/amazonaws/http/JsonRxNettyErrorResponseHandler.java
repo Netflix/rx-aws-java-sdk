@@ -23,6 +23,7 @@ import com.amazonaws.AmazonServiceException;
 import com.amazonaws.AmazonServiceException.ErrorType;
 import com.amazonaws.transform.JsonErrorUnmarshaller;
 import com.amazonaws.util.json.JSONObject;
+import com.amazonaws.util.RxSchedulers;
 
 import rx.Observable;
 import io.netty.buffer.ByteBuf;
@@ -65,6 +66,7 @@ public class JsonRxNettyErrorResponseHandler implements RxNettyResponseHandler<A
           }
         }
       )
+      .observeOn(RxSchedulers.computation())
       .map(out -> {
         JSONObject jsonErrorMessage;
         try {

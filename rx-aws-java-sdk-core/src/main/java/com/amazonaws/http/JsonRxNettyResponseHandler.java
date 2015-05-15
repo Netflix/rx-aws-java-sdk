@@ -16,6 +16,7 @@ import com.amazonaws.transform.JsonRxNettyUnmarshallerContextImpl;
 import com.amazonaws.transform.Unmarshaller;
 import com.amazonaws.transform.VoidJsonUnmarshaller;
 import com.amazonaws.util.CRC32ChecksumCalculatingInputStream;
+import com.amazonaws.util.RxSchedulers;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -48,73 +49,70 @@ public class JsonRxNettyResponseHandler<T> implements RxNettyResponseHandler<Ama
 
     public Observable<AmazonWebServiceResponse<T>> handle(HttpClientResponse<ByteBuf> response) throws Exception {
 
-      //return response.flatmap(r -> {
-        log.trace("Parsing service response JSON");
-
-        return response.getContent().reduce(
-          new ByteArrayOutputStream(),
-          (out, bb) -> {
-            try {
-              bb.readBytes(out, bb.readableBytes());
-              return out;
-            }
-            catch (java.io.IOException e) {
-              throw new RuntimeException(e);
-            }
-          })
-        .map(out -> {
-          return new ByteArrayInputStream(out.toByteArray());
-        })
-        .map(in -> {
-          String CRC32Checksum = response.getHeaders().get("x-amz-crc32");
-          CRC32ChecksumCalculatingInputStream crc32ChecksumInputStream = null;
-          JsonParser jsonParser = null;
+      return response.getContent().reduce(
+        new ByteArrayOutputStream(),
+        (out, bb) -> {
           try {
-            if (!needsConnectionLeftOpen) {
-              if (CRC32Checksum != null) {
-                crc32ChecksumInputStream = new CRC32ChecksumCalculatingInputStream(in);
-                jsonParser = jsonFactory.createJsonParser(crc32ChecksumInputStream);
-              } else {
-                jsonParser = jsonFactory.createJsonParser(in);
-              }
-            }
-
-            AmazonWebServiceResponse<T> awsResponse = new AmazonWebServiceResponse<T>();
-            JsonUnmarshallerContext unmarshallerContext = new JsonRxNettyUnmarshallerContextImpl(jsonParser, response.getHeaders());
-            registerAdditionalMetadataExpressions(unmarshallerContext);
-
-            T result = responseUnmarshaller.unmarshall(unmarshallerContext);
-
-            if (CRC32Checksum != null) {
-              long serverSideCRC = Long.parseLong(CRC32Checksum);
-              long clientSideCRC = crc32ChecksumInputStream.getCRC32Checksum();
-              if (clientSideCRC != serverSideCRC) {
-                throw new CRC32MismatchException("Client calculated crc32 checksum didn't match that calculated by server side");
-              }
-            }
-
-            awsResponse.setResult(result);
-
-            Map<String, String> metadata = unmarshallerContext.getMetadata();
-            metadata.put(ResponseMetadata.AWS_REQUEST_ID, response.getHeaders().get("x-amzn-RequestId"));
-            awsResponse.setResponseMetadata(new ResponseMetadata(metadata));
-
-            log.trace("Done parsing service response");
-            return awsResponse;
+            bb.readBytes(out, bb.readableBytes());
+            return out;
           }
           catch (java.io.IOException e) {
             throw new RuntimeException(e);
           }
-          catch (java.lang.Exception e) {
-            throw new RuntimeException(e);
-          }
-          finally {
-            if (!needsConnectionLeftOpen) {
-              try {jsonParser.close();} catch (Exception e) {}
+        })
+      .observeOn(RxSchedulers.computation())
+      .map(out -> {
+        return new ByteArrayInputStream(out.toByteArray());
+      })
+      .map(in -> {
+        String CRC32Checksum = response.getHeaders().get("x-amz-crc32");
+        CRC32ChecksumCalculatingInputStream crc32ChecksumInputStream = null;
+        JsonParser jsonParser = null;
+        try {
+          if (!needsConnectionLeftOpen) {
+            if (CRC32Checksum != null) {
+              crc32ChecksumInputStream = new CRC32ChecksumCalculatingInputStream(in);
+              jsonParser = jsonFactory.createJsonParser(crc32ChecksumInputStream);
+            } else {
+              jsonParser = jsonFactory.createJsonParser(in);
             }
           }
-        });
-      //});
+
+          AmazonWebServiceResponse<T> awsResponse = new AmazonWebServiceResponse<T>();
+          JsonUnmarshallerContext unmarshallerContext = new JsonRxNettyUnmarshallerContextImpl(jsonParser, response.getHeaders());
+          registerAdditionalMetadataExpressions(unmarshallerContext);
+
+          T result = responseUnmarshaller.unmarshall(unmarshallerContext);
+
+          if (CRC32Checksum != null) {
+            long serverSideCRC = Long.parseLong(CRC32Checksum);
+            long clientSideCRC = crc32ChecksumInputStream.getCRC32Checksum();
+            if (clientSideCRC != serverSideCRC) {
+              throw new CRC32MismatchException("Client calculated crc32 checksum didn't match that calculated by server side");
+            }
+          }
+
+          awsResponse.setResult(result);
+
+          Map<String, String> metadata = unmarshallerContext.getMetadata();
+          metadata.put(ResponseMetadata.AWS_REQUEST_ID, response.getHeaders().get("x-amzn-RequestId"));
+          awsResponse.setResponseMetadata(new ResponseMetadata(metadata));
+
+          log.trace("Done parsing service response");
+          return awsResponse;
+        }
+        catch (java.io.IOException e) {
+          throw new RuntimeException(e);
+        }
+        catch (java.lang.Exception e) {
+          throw new RuntimeException(e);
+        }
+        finally {
+          if (!needsConnectionLeftOpen) {
+            try {jsonParser.close();} catch (Exception e) {}
+          }
+        }
+      });
     }
 
     protected void registerAdditionalMetadataExpressions(JsonUnmarshallerContext unmarshallerContext) {}
