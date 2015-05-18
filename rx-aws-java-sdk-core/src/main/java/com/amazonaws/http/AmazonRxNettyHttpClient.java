@@ -246,8 +246,7 @@ abstract public class AmazonRxNettyHttpClient extends AmazonWebServiceClient {
       }
     )
     .repeat()
-    .first()
-    .observeOn(RxSchedulers.computation());
+    .first();
   }
 
   protected <Y extends AmazonWebServiceRequest> Observable<Void> prepareRequest(

@@ -389,21 +389,25 @@ public class <<CLASSNAME>> extends AmazonRxNettyHttpClient implements <<IFACENAM
       (create) -> {
         long startTime = System.currentTimeMillis();
         String token = mkToken(<<TOKEN_PARAMETERS>>);
-        if (token == null && cntRef.get() > 0) return Observable.just(null);
-        else {
-          ExecutionContext executionContext = createExecutionContext(request);
-          AWSRequestMetrics awsRequestMetrics = executionContext.getAwsRequestMetrics();
-          Request<<<REQUEST_TYPE>>> mReq = new <<REQUEST_TYPE>>Marshaller().marshall(request);
-          mReq.setAWSRequestMetrics(awsRequestMetrics);
-          <<RESULT_TYPE>><<TYPE_UNMARSHALLER>>Unmarshaller unmarshaller = <<RESULT_TYPE>><<TYPE_UNMARSHALLER>>Unmarshaller.getInstance();
-          return invoke<<TYPE_UNMARSHALLER>>(mReq, unmarshaller, exceptionUnmarshallers, executionContext)
-          .doOnNext(result -> {
-            <<UPDATE_PAGINATION>>
-          })
-          .map(result -> {
-            return new PaginatedServiceResult<<<RESULT_TYPE>>>(startTime, token, result);
-          });
-        }
+        return Observable.just(request)
+        .observeOn(RxSchedulers.computation())
+        .flatMap(r -> {
+          if (token == null && cntRef.get() > 0) return Observable.just(null);
+          else {
+            ExecutionContext executionContext = createExecutionContext(r);
+            AWSRequestMetrics awsRequestMetrics = executionContext.getAwsRequestMetrics();
+            Request<<<REQUEST_TYPE>>> mReq = new <<REQUEST_TYPE>>Marshaller().marshall(r);
+            mReq.setAWSRequestMetrics(awsRequestMetrics);
+            <<RESULT_TYPE>><<TYPE_UNMARSHALLER>>Unmarshaller unmarshaller = <<RESULT_TYPE>><<TYPE_UNMARSHALLER>>Unmarshaller.getInstance();
+            return invoke<<TYPE_UNMARSHALLER>>(mReq, unmarshaller, exceptionUnmarshallers, executionContext)
+            .doOnNext(result -> {
+              <<UPDATE_PAGINATION>>
+            })
+            .map(result -> {
+              return new PaginatedServiceResult<<<RESULT_TYPE>>>(startTime, token, result);
+            });
+          }
+        });
       },
       (dispose) -> {
         cntRef.incrementAndGet();
@@ -439,18 +443,15 @@ public class <<CLASSNAME>> extends AmazonRxNettyHttpClient implements <<IFACENAM
     final <<REQUEST_TYPE>> request
   ) {
     return Observable.just(request)
+    .observeOn(RxSchedulers.computation())
     .flatMap(r -> {
       long startTime = System.currentTimeMillis();
-      ExecutionContext executionContext = createExecutionContext(request);
+      ExecutionContext executionContext = createExecutionContext(r);
       AWSRequestMetrics awsRequestMetrics = executionContext.getAwsRequestMetrics();
-      return Observable.just(0).map(i -> {
-        return new <<REQUEST_TYPE>>Marshaller().marshall(r);
-      })
-      .flatMap(mReq -> {
-        mReq.setAWSRequestMetrics(awsRequestMetrics);
-        <<RESULT_TYPE>><<TYPE_UNMARSHALLER>>Unmarshaller unmarshaller = <<RESULT_TYPE>><<TYPE_UNMARSHALLER>>Unmarshaller.getInstance();
-        return invoke<<TYPE_UNMARSHALLER>>(mReq, unmarshaller, exceptionUnmarshallers, executionContext);
-      })
+      Request<<<REQUEST_TYPE>>> mReq = new <<REQUEST_TYPE>>Marshaller().marshall(r);
+      mReq.setAWSRequestMetrics(awsRequestMetrics);
+      <<RESULT_TYPE>><<TYPE_UNMARSHALLER>>Unmarshaller unmarshaller = <<RESULT_TYPE>><<TYPE_UNMARSHALLER>>Unmarshaller.getInstance();
+      return invoke<<TYPE_UNMARSHALLER>>(mReq, unmarshaller, exceptionUnmarshallers, executionContext)
       .map(result -> {
         return new ServiceResult<<<RESULT_TYPE>>>(startTime, result);
       });
@@ -481,18 +482,15 @@ public class <<CLASSNAME>> extends AmazonRxNettyHttpClient implements <<IFACENAM
     |    final <<REQUEST_TYPE>> request
     |  ) {
     |    return Observable.just(request)
+    |    .observeOn(RxSchedulers.computation())
     |    .flatMap(r -> {
     |      long startTime = System.currentTimeMillis();
-    |      ExecutionContext executionContext = createExecutionContext(request);
+    |      ExecutionContext executionContext = createExecutionContext(r);
     |      AWSRequestMetrics awsRequestMetrics = executionContext.getAwsRequestMetrics();
-    |      return Observable.just(0).map(i -> {
-    |        return new <<REQUEST_TYPE>>Marshaller().marshall(r);
-    |      })
-    |      .flatMap(mReq -> {
-    |        mReq.setAWSRequestMetrics(awsRequestMetrics);
-    |        Unmarshaller<Void,<<TYPE_UNMARSHALLER>>UnmarshallerContext> unmarshaller = (Unmarshaller<Void,<<TYPE_UNMARSHALLER>>UnmarshallerContext>) null;
-    |        return invoke<<TYPE_UNMARSHALLER>>(mReq, unmarshaller, exceptionUnmarshallers, executionContext);
-    |      })
+    |      Request<<<REQUEST_TYPE>>> mReq = new <<REQUEST_TYPE>>Marshaller().marshall(r);
+    |      mReq.setAWSRequestMetrics(awsRequestMetrics);
+    |      Unmarshaller<Void,<<TYPE_UNMARSHALLER>>UnmarshallerContext> unmarshaller = (Unmarshaller<Void,<<TYPE_UNMARSHALLER>>UnmarshallerContext>) null;
+    |      return invoke<<TYPE_UNMARSHALLER>>(mReq, unmarshaller, exceptionUnmarshallers, executionContext)
     |      .map(result -> {
     |        return new ServiceResult<<<RESULT_TYPE>>>(startTime, result);
     |      });
