@@ -218,7 +218,7 @@ abstract public class AmazonRxNettyHttpClient extends AmazonWebServiceClient {
         if (cnt.get() == 0 || (cnt.get() < clientConfiguration.getRetryPolicy().getMaxErrorRetry() && clientConfiguration.getRetryPolicy().getRetryCondition().shouldRetry(request.getOriginalRequest(), error.get(), cnt.get()))) {
           return Observable.defer(() -> {
             if (isPrepared) return Observable.just(null);
-            return  prepareRequest(request, executionContext).subscribeOn(Schedulers.computation());
+            return  prepareRequest(request, executionContext);
           })
           .subscribeOn(RxSchedulers.computation())
           .flatMap(v -> { return getBackoffStrategyDelay(request, cnt.get(), error.get()); })
