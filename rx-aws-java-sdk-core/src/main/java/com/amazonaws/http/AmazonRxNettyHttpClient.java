@@ -220,7 +220,6 @@ abstract public class AmazonRxNettyHttpClient extends AmazonWebServiceClient {
             if (isPrepared) return Observable.just(null);
             return  prepareRequest(request, executionContext);
           })
-          .subscribeOn(RxSchedulers.computation())
           .flatMap(v -> { return getBackoffStrategyDelay(request, cnt.get(), error.get()); })
           .flatMap(i -> {
             try {
@@ -325,10 +324,6 @@ abstract public class AmazonRxNettyHttpClient extends AmazonWebServiceClient {
 
       if (content != null) rxRequest.withContent(content);
 
-      return Observable.just(rxRequest);
-    })
-    .subscribeOn(RxSchedulers.computation())
-    .flatMap(rxRequest -> {
       return getClient(endpoint.getHost()).submit(rxRequest)
       .flatMap(response -> {
         if (response.getStatus().code() / 100 == 2) {
