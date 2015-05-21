@@ -205,47 +205,59 @@ abstract public class AmazonRxNettyHttpClient extends AmazonWebServiceClient {
     RxNettyResponseHandler<AmazonServiceException> errorResponseHandler,
     ExecutionContext executionContext
   ) {
-    final AtomicReference<AmazonClientException> error = new AtomicReference<AmazonClientException>(null);
-    final AtomicInteger cnt = new AtomicInteger(0);
+    return Observable.defer(() -> {
+      final AtomicReference<AmazonClientException> error =
+        new AtomicReference<AmazonClientException>(null);
 
-    return Observable.<X,Boolean>using(
-      () -> {
-        if (cnt.get() == 0) return Boolean.valueOf(false);
-        return Boolean.valueOf(true);
-      },
-      (isPrepared) -> {
-        assert(cnt.get() == 0 || error.get() != null);
-        if (cnt.get() == 0 || (cnt.get() < clientConfiguration.getRetryPolicy().getMaxErrorRetry() && clientConfiguration.getRetryPolicy().getRetryCondition().shouldRetry(request.getOriginalRequest(), error.get(), cnt.get()))) {
-          return Observable.defer(() -> {
-            if (isPrepared) return Observable.just(null);
-            return  prepareRequest(request, executionContext);
-          })
-          .flatMap(v -> { return getBackoffStrategyDelay(request, cnt.get(), error.get()); })
-          .flatMap(i -> {
-            try {
-              return invokeImpl(request, responseHandler, errorResponseHandler, executionContext);
-            }
-            catch (java.io.UnsupportedEncodingException e) {
-              return Observable.<X>error(e);
-            }
-          })
-          .doOnNext(n -> {
-            error.set(null);
-          })
-          .onErrorResumeNext(t -> {
-            if (t instanceof AmazonClientException) error.set((AmazonClientException) t);
-            else error.set(new AmazonClientException(t));
-            return Observable.empty();
-          });
+      final AtomicInteger cnt = new AtomicInteger(0);
+
+      return Observable.<X,Boolean>using(
+        () -> {
+          if (cnt.get() == 0) return Boolean.valueOf(false);
+          return Boolean.valueOf(true);
+        },
+        (isPrepared) -> {
+          assert(cnt.get() == 0 || error.get() != null);
+          if (
+            cnt.get() == 0 ||
+            (
+              cnt.get() < clientConfiguration.getRetryPolicy().getMaxErrorRetry() &&
+              clientConfiguration.getRetryPolicy().getRetryCondition().shouldRetry(
+                request.getOriginalRequest(), error.get(), cnt.get()
+              )
+            )
+          ) {
+            return Observable.defer(() -> {
+              if (isPrepared) return Observable.just(null);
+              return  prepareRequest(request, executionContext);
+            })
+            .flatMap(v -> { return getBackoffStrategyDelay(request, cnt.get(), error.get()); })
+            .flatMap(i -> {
+              try {
+                return invokeImpl(request, responseHandler, errorResponseHandler, executionContext);
+              }
+              catch (java.io.UnsupportedEncodingException e) {
+                return Observable.<X>error(e);
+              }
+            })
+            .doOnNext(n -> {
+              error.set(null);
+            })
+            .onErrorResumeNext(t -> {
+              if (t instanceof AmazonClientException) error.set((AmazonClientException) t);
+              else error.set(new AmazonClientException(t));
+              return Observable.empty();
+            });
+          }
+          else return Observable.<X>error(error.get());
+        },
+        (isPrepared) -> {
+          cnt.getAndIncrement();
         }
-        else return Observable.<X>error(error.get());
-      },
-      (isPrepared) -> {
-        cnt.getAndIncrement();
-      }
-    )
-    .repeat()
-    .first();
+      )
+      .repeat()
+      .first();
+    });
   }
 
   protected <Y extends AmazonWebServiceRequest> Observable<Void> prepareRequest(
