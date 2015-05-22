@@ -1,17 +1,3 @@
-/*
- * Copyright 2013-2015 Amazon.com, Inc. or its affiliates. All Rights Reserved.
- *
- * Licensed under the Apache License, Version 2.0 (the "License").
- * You may not use this file except in compliance with the License.
- * A copy of the License is located at
- *
- *  http://aws.amazon.com/apache2.0
- *
- * or in the "license" file accompanying this file. This file is distributed
- * on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
- * express or implied. See the License for the specific language governing
- * permissions and limitations under the License.
- */
 package com.amazonaws.auth;
 
 import static com.amazonaws.auth.internal.SignerConstants.AUTHORIZATION;
@@ -53,9 +39,6 @@ import com.amazonaws.util.BinaryUtils;
 import com.amazonaws.util.DateUtils;
 import com.amazonaws.util.RxSdkHttpUtils;
 
-/**
- * Signer implementation that signs requests with the AWS4 signing protocol.
- */
 public class RxAWS4Signer extends RxAbstractAWSSigner implements
         ServiceAwareSigner, RegionAwareSigner, Presigner {
 
@@ -63,106 +46,44 @@ public class RxAWS4Signer extends RxAbstractAWSSigner implements
     private static final int SIGNER_CACHE_MAX_SIZE = 300;
     private static final FIFOCache<SignerKey> signerCache = new FIFOCache<SignerKey>(SIGNER_CACHE_MAX_SIZE);
 
-    /**
-     * Service name override for use when the endpoint can't be used to
-     * determine the service name.
-     */
     protected String serviceName;
 
-    /**
-     * Region name override for use when the endpoint can't be used to determine
-     * the region name.
-     */
     protected String regionName;
 
-    /** Date override for testing only */
     protected Date overriddenDate;
 
-    /**
-     * Whether double url-encode the resource path when constructing the
-     * canonical request. By default, we enable double url-encoding.
-     *
-     * TODO: Different sigv4 services seem to be inconsistent on this. So for
-     * services that want to suppress this, they should use new
-     * RxAWS4Signer(false).
-     */
     protected boolean doubleUrlEncode;
 
-    /**
-     * Construct a new AWS4 signer instance. By default, enable double
-     * url-encoding.
-     */
     public RxAWS4Signer() {
         this(true);
     }
 
-    /**
-     * Construct a new AWS4 signer instance.
-     *
-     * @param doubleUrlEncoding
-     *            Whether double url-encode the resource path when constructing
-     *            the canonical request.
-     */
     public RxAWS4Signer(boolean doubleUrlEncoding) {
         this.doubleUrlEncode = doubleUrlEncoding;
     }
 
-    /**
-     * Sets the service name that this signer should use when calculating
-     * request signatures. This can almost always be determined directly from
-     * the request's end point, so you shouldn't need this method, but it's
-     * provided for the edge case where the information is not in the endpoint.
-     *
-     * @param serviceName
-     *            The service name to use when calculating signatures in this
-     *            signer.
-     */
     @Override
     public void setServiceName(String serviceName) {
         this.serviceName = serviceName;
     }
 
-    /**
-     * Sets the region name that this signer should use when calculating request
-     * signatures. This can almost always be determined directly from the
-     * request's end point, so you shouldn't need this method, but it's provided
-     * for the edge case where the information is not in the endpoint.
-     *
-     * @param regionName
-     *            The region name to use when calculating signatures in this
-     *            signer.
-     */
     @Override
     public void setRegionName(String regionName) {
         this.regionName = regionName;
     }
 
-    /**
-     * Sets the date that overrides the signing date in the request. This method
-     * is internal and should be used only for testing purposes.
-     */
     void setOverrideDate(Date overriddenDate) {
         this.overriddenDate = overriddenDate;
     }
 
-    /**
-     * Returns the region name that is used when calculating the signature.
-     */
     public String getRegionName() {
         return regionName;
     }
 
-    /**
-     * Returns the service name that is used when calculating the signature.
-     */
     public String getServiceName() {
         return serviceName;
     }
 
-    /**
-     * Returns a copy of date that overrides the signing date in the request.
-     * Return null by default.
-     */
     public Date getOverriddenDate() {
         return overriddenDate == null ? null : new Date(
                 overriddenDate.getTime());
@@ -170,7 +91,6 @@ public class RxAWS4Signer extends RxAbstractAWSSigner implements
 
     @Override
     public void sign(SignableRequest<?> request, AWSCredentials credentials) {
-        // anonymous credentials, don't sign
         if (isAnonymous(credentials)) {
             return;
         }
@@ -220,7 +140,6 @@ public class RxAWS4Signer extends RxAbstractAWSSigner implements
     public void presignRequest(SignableRequest<?> request, AWSCredentials credentials,
             Date userSpecifiedExpirationDate) {
 
-        // anonymous credentials, don't sign
         if (isAnonymous(credentials)) {
             return;
         }
@@ -231,9 +150,6 @@ public class RxAWS4Signer extends RxAbstractAWSSigner implements
 
         AWSCredentials sanitizedCredentials = sanitizeCredentials(credentials);
         if (sanitizedCredentials instanceof AWSSessionCredentials) {
-            // For SigV4 pre-signing URL, we need to add "X-Amz-Security-Token"
-            // as a query string parameter, before constructing the canonical
-            // request.
             request.addParameter(X_AMZ_SECURITY_TOKEN,
                     ((AWSSessionCredentials) sanitizedCredentials)
                             .getSessionToken());
@@ -243,7 +159,6 @@ public class RxAWS4Signer extends RxAbstractAWSSigner implements
                 request, overriddenDate, regionName, serviceName,
                 AWS4_SIGNING_ALGORITHM);
 
-        // Add the important parameters for v4 signing
         final String timeStamp = AWS4SignerUtils.formatTimestamp(System
                 .currentTimeMillis());
 
@@ -267,15 +182,8 @@ public class RxAWS4Signer extends RxAbstractAWSSigner implements
         request.addParameter(X_AMZ_SIGNATURE, BinaryUtils.toHex(signature));
     }
 
-    /**
-     * Step 1 of the AWS Signature version 4 calculation. Refer to
-     * http://docs.aws
-     * .amazon.com/general/latest/gr/sigv4-create-canonical-request.html to
-     * generate the canonical request.
-     */
     protected String createCanonicalRequest(SignableRequest<?> request,
             String contentSha256) {
-        /* This would url-encode the resource path for the first time. */
         final String path = RxSdkHttpUtils.appendUri(
                 request.getEndpoint().getPath(), request.getResourcePath());
 
@@ -283,7 +191,6 @@ public class RxAWS4Signer extends RxAbstractAWSSigner implements
                 .getHttpMethod().toString());
 
         canonicalRequestBuilder.append(LINE_SEPARATOR)
-                // This would optionally double url-encode the resource path
                 .append(getCanonicalizedResourcePath(path, doubleUrlEncode))
                 .append(LINE_SEPARATOR)
                 .append(getCanonicalizedQueryString(request))
@@ -301,11 +208,6 @@ public class RxAWS4Signer extends RxAbstractAWSSigner implements
         return canonicalRequest;
     }
 
-    /**
-     * Step 2 of the AWS Signature version 4 calculation. Refer to
-     * http://docs.aws
-     * .amazon.com/general/latest/gr/sigv4-create-string-to-sign.html.
-     */
     protected String createStringToSign(String canonicalRequest,
             AWS4SignerRequestParams signerParams) {
 
@@ -326,12 +228,6 @@ public class RxAWS4Signer extends RxAbstractAWSSigner implements
         return stringToSign;
     }
 
-    /**
-     * Step 3 of the AWS Signature version 4 calculation. It involves deriving
-     * the signing key and computing the signature. Refer to
-     * http://docs.aws.amazon
-     * .com/general/latest/gr/sigv4-calculate-signature.html
-     */
     private final byte[] deriveSigningKey(AWSCredentials credentials,
             AWS4SignerRequestParams signerRequestParams) {
 
@@ -362,9 +258,6 @@ public class RxAWS4Signer extends RxAbstractAWSSigner implements
         return signingKey;
     }
 
-    /**
-     * Computes the name to be used to reference the signing key in the cache.
-     */
     private final String computeSigningCacheKeyName(AWSCredentials credentials,
             AWS4SignerRequestParams signerRequestParams) {
         final StringBuilder hashKeyBuilder = new StringBuilder(
@@ -376,21 +269,12 @@ public class RxAWS4Signer extends RxAbstractAWSSigner implements
                 .append(signerRequestParams.getServiceName()).toString();
     }
 
-    /**
-     * Step 3 of the AWS Signature version 4 calculation. It involves deriving
-     * the signing key and computing the signature. Refer to
-     * http://docs.aws.amazon
-     * .com/general/latest/gr/sigv4-calculate-signature.html
-     */
     protected final byte[] computeSignature(String stringToSign,
             byte[] signingKey, AWS4SignerRequestParams signerRequestParams) {
         return sign(stringToSign.getBytes(Charset.forName("UTF-8")), signingKey,
                 SigningAlgorithm.HmacSHA256);
     }
 
-    /**
-     * Creates the authorization header to be included in the request.
-     */
     private String buildAuthorizationHeader(SignableRequest<?> request,
             byte[] signature, AWSCredentials credentials,
             AWS4SignerRequestParams signerParams) {
@@ -417,9 +301,6 @@ public class RxAWS4Signer extends RxAbstractAWSSigner implements
         return authHeaderBuilder.toString();
     }
 
-    /**
-     * Includes all the signing headers as request parameters for pre-signing.
-     */
     private void addPreSignInformationToRequest(SignableRequest<?> request,
             AWSCredentials credentials, AWS4SignerRequestParams signerParams,
             String timeStamp, long expirationInSeconds) {
@@ -480,8 +361,6 @@ public class RxAWS4Signer extends RxAbstractAWSSigner implements
     }
 
     protected void addHostHeader(SignableRequest<?> request) {
-        // AWS4 requires that we sign the Host header so we
-        // have to have it in the request by the time we sign.
 
         final URI endpoint = request.getEndpoint();
         final StringBuilder hostHeaderBuilder = new StringBuilder(
@@ -493,13 +372,6 @@ public class RxAWS4Signer extends RxAbstractAWSSigner implements
         request.addHeader(HOST, hostHeaderBuilder.toString());
     }
 
-    /**
-     * Calculate the hash of the request's payload. Subclass could override this
-     * method to provide different values for "x-amz-content-sha256" header or
-     * do any other necessary set-ups on the request headers. (e.g. aws-chunked
-     * uses a pre-defined header value, and needs to change some headers
-     * relating to content-encoding and content-length.)
-     */
     protected String calculateContentHash(SignableRequest<?> request) {
         InputStream payloadStream = getBinaryRequestPayloadStream(request);
         ReadLimitInfo info = request.getReadLimitInfo();
@@ -515,41 +387,19 @@ public class RxAWS4Signer extends RxAbstractAWSSigner implements
         return contentSha256;
     }
 
-    /**
-     * Subclass could override this method to perform any additional procedure
-     * on the request payload, with access to the result from signing the
-     * header. (e.g. Signing the payload by chunk-encoding). The default
-     * implementation doesn't need to do anything.
-     */
     protected void processRequestPayload(SignableRequest<?> request, byte[] signature,
             byte[] signingKey, AWS4SignerRequestParams signerRequestParams) {
         return;
     }
 
-    /**
-     * Calculate the hash of the request's payload. In case of pre-sign, the
-     * existing code would generate the hash of an empty byte array and returns
-     * it. This method can be overridden by sub classes to provide different
-     * values (e.g) For S3 pre-signing, the content hash calculation is
-     * different from the general implementation.
-     *
-     */
     protected String calculateContentHashPresign(SignableRequest<?> request) {
         return calculateContentHash(request);
     }
 
-    /**
-     * Checks if the credentials is an instance of
-     * <code>AnonymousAWSCredentials<code>
-     */
     private boolean isAnonymous(AWSCredentials credentials) {
         return credentials instanceof AnonymousAWSCredentials;
     }
 
-    /**
-     * Generates an expiration date for the presigned url. If user has specified
-     * an expiration date, check if it is in the given limit.
-     */
     private long generateExpirationDate(Date expirationDate) {
 
         long expirationInSeconds = expirationDate != null ? ((expirationDate
@@ -566,9 +416,6 @@ public class RxAWS4Signer extends RxAbstractAWSSigner implements
         return expirationInSeconds;
     }
 
-    /**
-     * Generates a new signing key from the given parameters and returns it.
-     */
     private byte[] newSigningKey(AWSCredentials credentials,
             String dateStamp, String regionName, String serviceName) {
         byte[] kSecret = ("AWS4" + credentials.getAWSSecretKey())

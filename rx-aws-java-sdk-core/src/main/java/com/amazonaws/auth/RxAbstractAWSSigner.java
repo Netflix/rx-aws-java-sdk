@@ -1,17 +1,3 @@
-/*
- * Copyright 2010-2015 Amazon.com, Inc. or its affiliates. All Rights Reserved.
- *
- * Licensed under the Apache License, Version 2.0 (the "License").
- * You may not use this file except in compliance with the License.
- * A copy of the License is located at
- *
- *  http://aws.amazon.com/apache2.0
- *
- * or in the "license" file accompanying this file. This file is distributed
- * on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
- * express or implied. See the License for the specific language governing
- * permissions and limitations under the License.
- */
 package com.amazonaws.auth;
 
 import static com.amazonaws.util.StringUtils.UTF8;
@@ -40,13 +26,6 @@ import com.amazonaws.util.Base64;
 import com.amazonaws.util.BinaryUtils;
 import com.amazonaws.util.RxSdkHttpUtils;
 
-/**
- * Abstract base class for AWS signing protocol implementations. Provides
- * utilities commonly needed by signing protocols such as computing
- * canonicalized host names, query string parameters, etc.
- * <p>
- * Not intended to be sub-classed by developers.
- */
 public abstract class RxAbstractAWSSigner implements Signer {
     public static final String EMPTY_STRING_SHA256_HEX;
 
@@ -54,19 +33,11 @@ public abstract class RxAbstractAWSSigner implements Signer {
         EMPTY_STRING_SHA256_HEX = BinaryUtils.toHex(doHash(""));
     }
 
-    /**
-     * Computes an RFC 2104-compliant HMAC signature and returns the result as a
-     * Base64 encoded string.
-     */
     protected String signAndBase64Encode(String data, String key,
             SigningAlgorithm algorithm) throws AmazonClientException {
         return signAndBase64Encode(data.getBytes(UTF8), key, algorithm);
     }
 
-    /**
-     * Computes an RFC 2104-compliant HMAC signature for an array of bytes and
-     * returns the result as a Base64 encoded string.
-     */
     protected String signAndBase64Encode(byte[] data, String key,
             SigningAlgorithm algorithm) throws AmazonClientException {
         try {
@@ -114,18 +85,6 @@ public abstract class RxAbstractAWSSigner implements Signer {
         }
     }
 
-    /**
-     * Hashes the string contents (assumed to be UTF-8) using the SHA-256
-     * algorithm.
-     *
-     * @param text
-     *            The string to hash.
-     *
-     * @return The hashed bytes from the specified string.
-     *
-     * @throws AmazonClientException
-     *             If the hash cannot be computed.
-     */
     public byte[] hash(String text) throws AmazonClientException {
         return RxAbstractAWSSigner.doHash(text);
     }
@@ -159,17 +118,6 @@ public abstract class RxAbstractAWSSigner implements Signer {
         }
     }
 
-    /**
-     * Hashes the binary data using the SHA-256 algorithm.
-     *
-     * @param data
-     *            The binary data to hash.
-     *
-     * @return The hashed bytes from the specified data.
-     *
-     * @throws AmazonClientException
-     *             If the hash cannot be computed.
-     */
     public byte[] hash(byte[] data) throws AmazonClientException {
         try {
             MessageDigest md = MessageDigest.getInstance("SHA-256");
@@ -181,19 +129,6 @@ public abstract class RxAbstractAWSSigner implements Signer {
                             + e.getMessage(), e);
         }
     }
-    /**
-     * Examines the specified query string parameters and returns a
-     * canonicalized form.
-     * <p>
-     * The canonicalized query string is formed by first sorting all the query
-     * string parameters, then URI encoding both the key and value and then
-     * joining them, in order, separating key value pairs with an '&'.
-     *
-     * @param parameters
-     *            The query string parameters to be canonicalized.
-     *
-     * @return A canonicalized form for the specified query string parameters.
-     */
     protected String getCanonicalizedQueryString(Map<String, String> parameters) {
 
         SortedMap<String, String> sorted = new TreeMap<String, String>();
@@ -222,23 +157,11 @@ public abstract class RxAbstractAWSSigner implements Signer {
     }
 
     protected String getCanonicalizedQueryString(SignableRequest<?> request) {
-        /*
-         * If we're using POST and we don't have any request payload content,
-         * then any request query parameters will be sent as the payload, and
-         * not in the actual query string.
-         */
         if (RxSdkHttpUtils.usePayloadForQueryParameters(request))
             return "";
         return this.getCanonicalizedQueryString(request.getParameters());
     }
 
-    /**
-     * Returns the request's payload as binary data.
-     *
-     * @param request
-     *            The request
-     * @return The data from the request's payload, as binary data.
-     */
     protected byte[] getBinaryRequestPayload(SignableRequest<?> request) {
         if (RxSdkHttpUtils.usePayloadForQueryParameters(request)) {
             String encodedParameters = RxSdkHttpUtils.encodeParameters(request);
@@ -251,39 +174,14 @@ public abstract class RxAbstractAWSSigner implements Signer {
         return getBinaryRequestPayloadWithoutQueryParams(request);
     }
 
-    /**
-     * Returns the request's payload as a String.
-     *
-     * @param request
-     *            The request
-     * @return The data from the request's payload, as a string.
-     */
     protected String getRequestPayload(SignableRequest<?> request) {
         return newString(getBinaryRequestPayload(request));
     }
 
-    /**
-     * Returns the request's payload contents as a String, without processing
-     * any query string params (i.e. no form encoding for query params).
-     *
-     * @param request
-     *            The request
-     * @return the request's payload contents as a String, not including any
-     *         form encoding of query string params.
-     */
     protected String getRequestPayloadWithoutQueryParams(SignableRequest<?> request) {
         return newString(getBinaryRequestPayloadWithoutQueryParams(request));
     }
 
-    /**
-     * Returns the request's payload contents as binary data, without processing
-     * any query string params (i.e. no form encoding for query params).
-     *
-     * @param request
-     *            The request
-     * @return The request's payload contents as binary data, not including any
-     *         form encoding of query string params.
-     */
     protected byte[] getBinaryRequestPayloadWithoutQueryParams(SignableRequest<?> request) {
         InputStream content = getBinaryRequestPayloadStreamWithoutQueryParams(request);
 
@@ -355,13 +253,6 @@ public abstract class RxAbstractAWSSigner implements Signer {
 
     protected String getCanonicalizedEndpoint(URI endpoint) {
         String endpointForStringToSign = endpoint.getHost().toLowerCase();
-        /*
-         * Apache HttpClient will omit the port in the Host header for default
-         * port values (i.e. 80 for HTTP and 443 for HTTPS) even if we
-         * explicitly specify it, so we need to be careful that we use the same
-         * value here when we calculate the string to sign and in the Host
-         * header we send in the HTTP request.
-         */
         if (RxSdkHttpUtils.isUsingNonDefaultPort(endpoint)) {
             endpointForStringToSign += ":" + endpoint.getPort();
         }
@@ -369,18 +260,6 @@ public abstract class RxAbstractAWSSigner implements Signer {
         return endpointForStringToSign;
     }
 
-    /**
-     * Loads the individual access key ID and secret key from the specified
-     * credentials, ensuring that access to the credentials is synchronized on
-     * the credentials object itself, and trimming any extra whitespace from the
-     * credentials.
-     * <p>
-     * Returns either a {@link BasicSessionCredentials} or a
-     * {@link BasicAWSCredentials} object, depending on the input type.
-     *
-     * @param credentials
-     * @return A new credentials object with the sanitized credentials.
-     */
     protected AWSCredentials sanitizeCredentials(AWSCredentials credentials) {
         String accessKeyId = null;
         String secretKey   = null;
@@ -403,46 +282,20 @@ public abstract class RxAbstractAWSSigner implements Signer {
         return new BasicAWSCredentials(accessKeyId, secretKey);
     }
 
-    /**
-     * Safely converts a UTF-8 encoded byte array into a String.
-     *
-     * @param bytes UTF-8 encoded binary character data.
-     *
-     * @return The converted String object.
-     */
     protected String newString(byte[] bytes) {
         return new String(bytes, UTF8);
     }
 
-    /**
-     * Returns the current time minus the given offset in seconds.
-     * The intent is to adjust the current time in the running JVM to the
-     * corresponding wall clock time at AWS for request signing purposes.
-     *
-     * @param offsetInSeconds
-     *            offset in seconds
-     */
     protected Date getSignatureDate(int offsetInSeconds) {
         return new Date(System.currentTimeMillis() - offsetInSeconds*1000);
     }
 
-    /**
-     * Returns the time offset in seconds.
-     */
     @Deprecated
     protected int getTimeOffset(SignableRequest<?> request) {
         final int globleOffset = SDKGlobalTime.getGlobalTimeOffset();
         return globleOffset == 0 ? request.getTimeOffset() : globleOffset;
     }
 
-    /**
-     * Adds session credentials to the request given.
-     *
-     * @param request
-     *            The request to add session credentials information to
-     * @param credentials
-     *            The session credentials to add to the request
-     */
     protected abstract void addSessionCredentials(SignableRequest<?> request,
             AWSSessionCredentials credentials);
 }
