@@ -96,6 +96,10 @@ abstract public class AmazonRxNettyHttpClient extends AmazonWebServiceClient {
   }
 */
 
+  static {
+    SignerFactory.registerSigner("AWS4SignerType", RxAWS4Signer.class);
+  }
+
   private AWSCredentialsProvider awsCredentialsProvider;
 
   public AmazonRxNettyHttpClient() {
