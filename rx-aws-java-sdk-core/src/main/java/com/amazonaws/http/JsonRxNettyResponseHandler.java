@@ -88,7 +88,7 @@ public class JsonRxNettyResponseHandler<T> implements RxNettyResponseHandler<Ama
             long serverSideCRC = Long.parseLong(CRC32Checksum);
             long clientSideCRC = crc32ChecksumInputStream.getCRC32Checksum();
             if (clientSideCRC != serverSideCRC) {
-              throw new CRC32MismatchException("Client calculated crc32 checksum didn't match that calculated by server side [" + clientSideCRC + " != " + serverSideCRC + "]"); // [" + result + "]");
+              throw new CRC32MismatchException("Client calculated crc32 checksum didn't match that calculated by server side [" + clientSideCRC + " != " + serverSideCRC + "]");
             }
           }
 
