@@ -11,15 +11,17 @@ import com.google.common.reflect._
 case class ClientInfo(
   name: String,
   cinfo: ClassPath.ClassInfo,
-  exceptionUnmarshallers: List[ClassPath.ClassInfo]
+  exceptionUnmarshallers: List[ClassPath.ClassInfo],
+  format: String,
+  exceptions: List[ClassPath.ClassInfo]
 ) {
   lazy val endpoint: Option[String] = AwsGenerate.endpoints.get(name.toLowerCase)
   lazy val className: String = s"Amazon${name}RxNettyClient"
   lazy val interfaceName: String = s"Amazon${name}RxNetty"
-  lazy val isStax: Boolean = {
-    exceptionUnmarshallers.forall(_.load.getSuperclass.getSimpleName == "StandardErrorUnmarshaller")
-  }
-  lazy val isJson: Boolean = !isStax
+  lazy val isStax: Boolean = format == "stax"
+  lazy val isJsonV1: Boolean = format == "jsonV1"
+  lazy val isJsonV2: Boolean = format == "jsonV2"
+  lazy val isJson: Boolean = isJsonV1 || isJsonV2
 }
 
 object Pagination {
@@ -88,6 +90,7 @@ case class Pagination(
 object AwsGenerate {
 
   val clientPattern = """^Amazon([A-Za-z0-9]+?(?<!Async))?Client$""".r
+  val exception = """^(.*Exception)$""".r
   val exceptionUnmarshaller = """^(.*ExceptionUnmarshaller)$""".r
 
   val pageGetter = """^(get(?:Next)?Token)$""".r
@@ -122,7 +125,25 @@ object AwsGenerate {
                 case _ => None
               }
             }).toList.sortBy(_.toString)
-            Some(ClientInfo(prefix, cinfo, exceptionUnmarshallers))
+            val hasJson = ClassPath.from(cl)
+            .getTopLevelClassesRecursive(cinfo.getPackageName).exists(c2 => {
+              c2.getSimpleName.endsWith("JsonUnmarshaller")
+            })
+            val format = exceptionUnmarshallers match {
+              case v if (v.size == 0 && hasJson) => "jsonV2"
+              case v if (v.forall(_.load.getSuperclass.getSimpleName == "StandardErrorUnmarshaller")) => "stax"
+              case _ => "jsonV1"
+            }
+            val exceptions = ClassPath.from(cl)
+            .getTopLevelClasses(s"${cinfo.getPackageName}.model").flatMap(c2 => {
+              c2.getSimpleName match {
+                case exception(n) => {
+                  Some(c2)
+                }
+                case _ => None
+              }
+            }).toList.sortBy(_.toString)
+            Some(ClientInfo(prefix, cinfo, exceptionUnmarshallers, format, exceptions))
           }
           case _ => None
         }
@@ -211,6 +232,7 @@ object AwsGenerate {
       .replaceAll("<<TOKEN_PARAMETERS>>", mkTokenParameters(pagination))
       .replaceAll("<<UPDATE_PAGINATION>>", mkUpdatePagination(pagination))
       .replaceAll("<<TYPE_UNMARSHALLER>>", { if (c.isStax) "Stax" else "Json" })
+      .replaceAll("<<TYPE_UNMARSHALLER2>>", { if (c.isStax) "Stax" else if (c.isJsonV1) "Json" else "JsonV2" })
     )
   }
 
@@ -231,7 +253,7 @@ object AwsGenerate {
         List("exceptionUnmarshallers.add(new LegacyErrorUnmarshaller());")
       ).mkString("\n    ")
     )
-    else (
+    else if (c.isJsonV1) (
       "",
       "protected List<JsonErrorUnmarshaller> exceptionUnmarshallers;",
       (
@@ -242,6 +264,21 @@ object AwsGenerate {
           s"exceptionUnmarshallers.add(new ${c2.getSimpleName}());"
         }) ++
         List("exceptionUnmarshallers.add(new JsonErrorUnmarshaller());")
+      ).mkString("\n    ")
+    )
+    else (
+      "",
+      "protected List<JsonErrorUnmarshallerV2> exceptionUnmarshallers;",
+      (
+        List(
+          "exceptionUnmarshallers = new ArrayList<JsonErrorUnmarshallerV2>();"
+        ) ++
+        c.exceptions.map(c2 => {
+          val ex = c2.getSimpleName
+          val n = { if (ex.endsWith("ErrorException")) ex.substring(0, ex.size - 9) else ex }
+          s"""exceptionUnmarshallers.add(new JsonErrorUnmarshallerV2(${c2.getName}.class, \"${n}\"));"""
+        }) ++
+        List("exceptionUnmarshallers.add(JsonErrorUnmarshallerV2.DEFAULT_UNMARSHALLER);")
       ).mkString("\n    ")
     )
   }
@@ -399,7 +436,7 @@ public class <<CLASSNAME>> extends AmazonRxNettyHttpClient implements <<IFACENAM
             Request<<<REQUEST_TYPE>>> mReq = new <<REQUEST_TYPE>>Marshaller().marshall(r);
             mReq.setAWSRequestMetrics(awsRequestMetrics);
             <<RESULT_TYPE>><<TYPE_UNMARSHALLER>>Unmarshaller unmarshaller = <<RESULT_TYPE>><<TYPE_UNMARSHALLER>>Unmarshaller.getInstance();
-            return invoke<<TYPE_UNMARSHALLER>>(mReq, unmarshaller, exceptionUnmarshallers, executionContext)
+            return invoke<<TYPE_UNMARSHALLER2>>(mReq, unmarshaller, exceptionUnmarshallers, executionContext)
             .doOnNext(result -> {
               <<UPDATE_PAGINATION>>
             })
@@ -451,7 +488,7 @@ public class <<CLASSNAME>> extends AmazonRxNettyHttpClient implements <<IFACENAM
       Request<<<REQUEST_TYPE>>> mReq = new <<REQUEST_TYPE>>Marshaller().marshall(r);
       mReq.setAWSRequestMetrics(awsRequestMetrics);
       <<RESULT_TYPE>><<TYPE_UNMARSHALLER>>Unmarshaller unmarshaller = <<RESULT_TYPE>><<TYPE_UNMARSHALLER>>Unmarshaller.getInstance();
-      return invoke<<TYPE_UNMARSHALLER>>(mReq, unmarshaller, exceptionUnmarshallers, executionContext)
+      return invoke<<TYPE_UNMARSHALLER2>>(mReq, unmarshaller, exceptionUnmarshallers, executionContext)
       .map(result -> {
         return new ServiceResult<<<RESULT_TYPE>>>(startTime, result);
       });
@@ -490,7 +527,7 @@ public class <<CLASSNAME>> extends AmazonRxNettyHttpClient implements <<IFACENAM
     |      Request<<<REQUEST_TYPE>>> mReq = new <<REQUEST_TYPE>>Marshaller().marshall(r);
     |      mReq.setAWSRequestMetrics(awsRequestMetrics);
     |      Unmarshaller<Void,<<TYPE_UNMARSHALLER>>UnmarshallerContext> unmarshaller = (Unmarshaller<Void,<<TYPE_UNMARSHALLER>>UnmarshallerContext>) null;
-    |      return invoke<<TYPE_UNMARSHALLER>>(mReq, unmarshaller, exceptionUnmarshallers, executionContext)
+    |      return invoke<<TYPE_UNMARSHALLER2>>(mReq, unmarshaller, exceptionUnmarshallers, executionContext)
     |      .map(result -> {
     |        return new ServiceResult<<<RESULT_TYPE>>>(startTime, result);
     |      });

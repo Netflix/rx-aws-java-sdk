@@ -1,10 +1,13 @@
 package com.amazonaws.http;
 
 import java.io.ByteArrayInputStream;
+import java.io.InputStream;
 import java.net.URLEncoder;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
@@ -203,6 +206,18 @@ abstract public class AmazonRxNettyHttpClient extends AmazonWebServiceClient {
     return invoke(request, responseHandler, errorResponseHandler, executionContext);
   }
 
+  protected <X, Y extends AmazonWebServiceRequest> Observable<X> invokeJsonV2(
+    Request<Y> request,
+    Unmarshaller<X,JsonUnmarshallerContext> unmarshaller,
+    List<JsonErrorUnmarshallerV2> errorUnmarshallers,
+    ExecutionContext executionContext
+  ) {
+    JsonRxNettyResponseHandler<X> responseHandler = new JsonRxNettyResponseHandler<X>(unmarshaller);
+    JsonRxNettyErrorResponseHandlerV2 errorResponseHandler = new JsonRxNettyErrorResponseHandlerV2(request.getServiceName(), errorUnmarshallers);
+
+    return invoke(request, responseHandler, errorResponseHandler, executionContext);
+  }
+
   protected <X, Y extends AmazonWebServiceRequest> Observable<X> invoke(
     Request<Y> request,
     RxNettyResponseHandler<AmazonWebServiceResponse<X>> responseHandler,
@@ -214,6 +229,18 @@ abstract public class AmazonRxNettyHttpClient extends AmazonWebServiceClient {
         new AtomicReference<AmazonClientException>(null);
 
       final AtomicInteger cnt = new AtomicInteger(0);
+
+      final Map<String, List<String>> originalParameters =
+        new LinkedHashMap<String, List<String>>(request.getParameters());
+      final Map<String, String> originalHeaders =
+        new HashMap<String, String>(request.getHeaders());
+      // Always mark the input stream before execution.
+      final InputStream originalContent = request.getContent();
+      if (originalContent != null && originalContent.markSupported()) {
+        AmazonWebServiceRequest awsreq = request.getOriginalRequest();
+        final int readLimit = awsreq.getRequestClientOptions().getReadLimit();
+        originalContent.mark(readLimit);
+      }
 
       return Observable.<X,Boolean>using(
         () -> {
@@ -238,6 +265,11 @@ abstract public class AmazonRxNettyHttpClient extends AmazonWebServiceClient {
             .flatMap(v -> { return getBackoffStrategyDelay(request, cnt.get(), error.get()); })
             .flatMap(i -> {
               try {
+                if (isPrepared) {
+                  request.setParameters(originalParameters);
+                  request.setHeaders(originalHeaders);
+                  request.setContent(originalContent);
+                }
                 return invokeImpl(request, responseHandler, errorResponseHandler, executionContext);
               }
               catch (java.io.UnsupportedEncodingException e) {
@@ -275,10 +307,6 @@ abstract public class AmazonRxNettyHttpClient extends AmazonWebServiceClient {
       request.addHeader("Accept-encoding", "gzip");
       AmazonWebServiceRequest originalRequest = request.getOriginalRequest();
 
-      originalRequest.copyPrivateRequestParameters().entrySet().stream().forEach(e -> {
-        request.addParameter(e.getKey(), e.getValue());
-      });
-
       AWSCredentials credentials = request.getOriginalRequest().getRequestCredentials();
       if (credentials == null) {
         credentials = awsCredentialsProvider.getCredentials();
@@ -287,10 +315,6 @@ abstract public class AmazonRxNettyHttpClient extends AmazonWebServiceClient {
       executionContext.setCredentials(credentials);
 
       ProgressListener listener = originalRequest.getGeneralProgressListener();
-
-      if (originalRequest.getCustomRequestHeaders() != null) {
-        request.getHeaders().putAll(originalRequest.getCustomRequestHeaders());
-      }
 
       String serviceName = request.getServiceName().substring(6).toLowerCase();
       if (serviceName.endsWith("v2"))

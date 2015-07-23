@@ -20,6 +20,7 @@ import java.net.URLEncoder;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Map.Entry;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -137,20 +138,21 @@ public class RxSdkHttpUtils {
      *         string for the parameters present in the specified request.
      */
     public static String encodeParameters(SignableRequest<?> request) {
-        List<NameValuePair> nameValuePairs = null;
-        if (request.getParameters().size() > 0) {
-            nameValuePairs = new ArrayList<NameValuePair>(request.getParameters().size());
-            for (Entry<String, String> entry : request.getParameters().entrySet()) {
-                nameValuePairs.add(new BasicNameValuePair(entry.getKey(), entry.getValue()));
+        final Map<String, List<String>> requestParams = request.getParameters();
+
+        if (requestParams.isEmpty()) return null;
+
+        final List<NameValuePair> nameValuePairs = new ArrayList<NameValuePair>();
+
+        for (Entry<String, List<String>> entry : requestParams.entrySet()) {
+            String parameterName = entry.getKey();
+            for (String value : entry.getValue()) {
+                nameValuePairs
+                    .add(new BasicNameValuePair(parameterName, value));
             }
         }
 
-        String encodedParams = null;
-        if (nameValuePairs != null) {
-            encodedParams = RxURLEncodedUtils.format(nameValuePairs, DEFAULT_CHARSET);
-        }
-
-        return encodedParams;
+        return RxURLEncodedUtils.format(nameValuePairs, DEFAULT_CHARSET);
     }
 
     /**
