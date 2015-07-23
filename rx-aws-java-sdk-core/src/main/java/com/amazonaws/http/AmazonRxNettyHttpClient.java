@@ -304,7 +304,7 @@ abstract public class AmazonRxNettyHttpClient extends AmazonWebServiceClient {
       request.setEndpoint(endpoint);
       request.setTimeOffset(timeOffset);
       request.addHeader("User-agent", "rx-"+clientConfiguration.getUserAgent());
-      request.addHeader("Accept-encoding", "gzip");
+      //request.addHeader("Accept-encoding", "gzip");
       AmazonWebServiceRequest originalRequest = request.getOriginalRequest();
 
       AWSCredentials credentials = request.getOriginalRequest().getRequestCredentials();
