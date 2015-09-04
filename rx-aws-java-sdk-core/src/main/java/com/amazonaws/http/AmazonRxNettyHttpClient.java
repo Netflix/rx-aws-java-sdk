@@ -320,6 +320,8 @@ abstract public class AmazonRxNettyHttpClient extends AmazonWebServiceClient {
       String serviceName = request.getServiceName().substring(6).toLowerCase();
       if (serviceName.endsWith("v2"))
         serviceName = serviceName.substring(0, serviceName.length() - 2);
+      if (serviceName.equals("cloudwatch"))
+        serviceName = "monitoring";
       String hostName = endpoint.getHost();
       String regionName = AwsHostNameUtils.parseRegionName(hostName, serviceName);
 

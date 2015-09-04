@@ -596,11 +596,20 @@ public class <<CLASSNAME>> extends AmazonRxNettyHttpClient implements <<IFACENAM
       |      r.result.getHostedZones().stream().forEach(h -> acc.add(h.getId()));
       |      return acc;
       |    })
-      |    .flatMap(list -> Observable.from(list))
-      |    .flatMap(id -> {
-      |      return listResourceRecordSets(new ListResourceRecordSetsRequest().withHostedZoneId(id));
+      |    .flatMap(list -> {
+      |      if (list.size() == 0) {
+      |        return Observable.just(new PaginatedServiceResult<ListResourceRecordSetsResult>(
+      |          System.currentTimeMillis(), null, new ListResourceRecordSetsResult()
+      |        ));
+      |      }
+      |      else {
+      |        return Observable.from(list)
+      |        .flatMap(id -> {
+      |          return listResourceRecordSets(new ListResourceRecordSetsRequest().withHostedZoneId(id));
+      |        });
+      |      }
       |    });
-      |}
+      |  }
       |""".stripMargin
     )
   )
