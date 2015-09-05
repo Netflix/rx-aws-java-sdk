@@ -165,6 +165,7 @@ object AwsGenerate {
     val (imp, field, init) = mkExceptionUnmarshaller(c)
     headerTemplate
     .replaceAll("<<PKG>>", c.cinfo.getPackageName)
+    .replaceAll("<<PKG_RESOURCE>>", c.cinfo.getPackageName.replaceAll("\\.", "/"))
     .replaceAll("<<CLASSNAME>>", c.className)
     .replaceAll("<<IFACENAME>>", c.interfaceName)
     .replaceAll("<<ENDPOINT>>", c.endpoint.get)
@@ -384,6 +385,11 @@ public class <<CLASSNAME>> extends AmazonRxNettyHttpClient implements <<IFACENAM
   protected void init() {
     setEndpoint("<<ENDPOINT>>");
     <<EXCEPTION_UNMARSHALLER_INIT>>
+    HandlerChainFactory chainFactory = new HandlerChainFactory();
+    requestHandler2s.addAll(chainFactory.newRequestHandlerChain(
+            "/<<PKG_RESOURCE>>/request.handlers"));
+    requestHandler2s.addAll(chainFactory.newRequestHandler2Chain(
+            "/<<PKG_RESOURCE>>/request.handler2s"));
   }
 """
 
@@ -433,7 +439,7 @@ public class <<CLASSNAME>> extends AmazonRxNettyHttpClient implements <<IFACENAM
           else {
             ExecutionContext executionContext = createExecutionContext(r);
             AWSRequestMetrics awsRequestMetrics = executionContext.getAwsRequestMetrics();
-            Request<<<REQUEST_TYPE>>> mReq = new <<REQUEST_TYPE>>Marshaller().marshall(r);
+            Request<<<REQUEST_TYPE>>> mReq = new <<REQUEST_TYPE>>Marshaller().marshall(beforeMarshalling(r));
             mReq.setAWSRequestMetrics(awsRequestMetrics);
             <<RESULT_TYPE>><<TYPE_UNMARSHALLER>>Unmarshaller unmarshaller = <<RESULT_TYPE>><<TYPE_UNMARSHALLER>>Unmarshaller.getInstance();
             return invoke<<TYPE_UNMARSHALLER2>>(mReq, unmarshaller, exceptionUnmarshallers, executionContext)

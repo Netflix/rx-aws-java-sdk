@@ -315,6 +315,14 @@ abstract public class AmazonRxNettyHttpClient extends AmazonWebServiceClient {
 
       executionContext.setCredentials(credentials);
 
+      for (RequestHandler2 requestHandler2 : requestHandler2s(executionContext)) {
+        if (requestHandler2 instanceof CredentialsRequestHandler)
+          ((CredentialsRequestHandler) requestHandler2).setCredentials(
+            executionContext.getCredentials()
+          );
+        requestHandler2.beforeRequest(request);
+      }
+
       ProgressListener listener = originalRequest.getGeneralProgressListener();
 
       String serviceName = request.getServiceName().substring(6).toLowerCase();
@@ -331,6 +339,32 @@ abstract public class AmazonRxNettyHttpClient extends AmazonWebServiceClient {
     });
   }
 
+  private List<RequestHandler2> requestHandler2s(ExecutionContext executionContext) {
+    List<RequestHandler2> requestHandler2s = executionContext.getRequestHandler2s();
+    return (requestHandler2s == null) ? java.util.Collections.emptyList() : requestHandler2s;
+  }
+
+  private void afterError(
+    Request<?> request,
+    Response<?> response,
+    List<RequestHandler2> requestHandler2s,
+    AmazonClientException e
+  ) {
+    for (RequestHandler2 handler2 : requestHandler2s) {
+      handler2.afterError(request, response, e);
+    }
+  }
+
+  private <T> void afterResponse(
+    Request<?> request,
+    List<RequestHandler2> requestHandler2s,
+    Response<T> response
+  ) {
+    for (RequestHandler2 handler2 : requestHandler2s) {
+      handler2.afterResponse(request, response);
+    }
+  }
+
   protected <X,Y extends AmazonWebServiceRequest> Observable<X> invokeImpl(
     Request<Y> request,
     RxNettyResponseHandler<AmazonWebServiceResponse<X>> responseHandler,
@@ -339,6 +373,7 @@ abstract public class AmazonRxNettyHttpClient extends AmazonWebServiceClient {
   ) throws java.io.UnsupportedEncodingException {
 
     return Observable.defer(() -> {
+      final List<RequestHandler2> requestHandler2s = requestHandler2s(executionContext);
       StringBuffer sbPath = new StringBuffer();
       if (request.getResourcePath() != null) sbPath.append(request.getResourcePath());
       if (sbPath.length() == 0) sbPath.append("/");
@@ -371,7 +406,11 @@ abstract public class AmazonRxNettyHttpClient extends AmazonWebServiceClient {
       .flatMap(response -> {
         if (response.getStatus().code() / 100 == 2) {
           try {
-            return responseHandler.handle(response).map(r -> { return r.getResult(); });
+            return responseHandler.handle(response).map(r -> {
+              Response<X> awsResponse = new Response<X>(r.getResult(), null);
+              afterResponse(request, requestHandler2s, awsResponse);
+              return awsResponse.getAwsResponse();
+            });
           }
           catch (Exception e) {
             return Observable.error(e);
@@ -381,6 +420,7 @@ abstract public class AmazonRxNettyHttpClient extends AmazonWebServiceClient {
           try {
             return errorResponseHandler.handle(response).flatMap(e -> {
               e.setServiceName(request.getServiceName());
+              afterError(request, null, requestHandler2s, e);
               return Observable.error(e);
             });
           }
