@@ -251,7 +251,10 @@ object AwsGenerate {
         c.exceptionUnmarshallers.map(c2 => {
           s"exceptionUnmarshallers.add(new ${c2.getSimpleName}());"
         }) ++
-        List("exceptionUnmarshallers.add(new LegacyErrorUnmarshaller());")
+        List(
+          "exceptionUnmarshallers.add(new StandardErrorUnmarshaller());",
+          "exceptionUnmarshallers.add(new LegacyErrorUnmarshaller());"
+        )
       ).mkString("\n    ")
     )
     else if (c.isJsonV1) (
