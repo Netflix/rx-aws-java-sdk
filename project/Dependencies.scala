@@ -7,11 +7,11 @@ object Dependencies {
     val guice      = "4.0-beta5"
     val karyon     = "2.2.0-rc.1"
     val ribbon     = "2.0.0"
-    val rxj        = "1.0.9"
-    val rxnetty    = "0.4.8.1"
+    val rxj        = "1.0.14"
+    val rxnetty    = "0.4.10.8"
     val scala      = "2.11.6"
     val slf4j      = "1.7.10"
-    val spectator  = "0.24.0"
+    val spectator  = "0.30.0"
   }
 
   import Versions._
