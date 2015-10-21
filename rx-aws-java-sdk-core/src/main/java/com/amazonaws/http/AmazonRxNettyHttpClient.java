@@ -18,7 +18,6 @@ import rx.Observable;
 import rx.schedulers.Schedulers;
 
 import io.netty.buffer.ByteBuf;
-import io.netty.handler.logging.LogLevel;
 import io.netty.handler.codec.http.HttpMethod;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.netty.channel.ChannelOption;
@@ -465,7 +464,6 @@ abstract public class AmazonRxNettyHttpClient extends AmazonWebServiceClient {
         .channelOption(ChannelOption.CONNECT_TIMEOUT_MILLIS, clientConfiguration.getConnectionTimeout())
         .withMaxConnections(clientConfiguration.getMaxConnections())
         .withIdleConnectionsTimeoutMillis(60000)
-        //.enableWireLogging(LogLevel.ERROR)
         .withSslEngineFactory((isSecure) ? DefaultFactories.trustAll() : null)
         .pipelineConfigurator(
           new PipelineConfiguratorComposite<HttpClientResponse<ByteBuf>,HttpClientRequest<ByteBuf>>(
