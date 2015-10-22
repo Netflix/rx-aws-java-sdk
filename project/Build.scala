@@ -74,8 +74,7 @@ object MainBuild extends Build {
       Dependencies.rxnettyCtxts,
       Dependencies.spectatorApi,
       Dependencies.slf4jApi,
-      "io.reactivex" %% "rxscala" % "0.25.0" % "test",
-      "io.netty" % "netty-handler" % "4.1.0.Beta6" % "test"
+      "io.reactivex" %% "rxscala" % "0.25.0" % "test"
     ))
 
   lazy val `rx-aws-java-sdk-autoscaling` = project
@@ -84,8 +83,7 @@ object MainBuild extends Build {
     .settings(libraryDependencies ++= commonDeps)
     .settings(libraryDependencies ++= Seq(
       Dependencies.awsAutoScaling,
-      "io.reactivex" %% "rxscala" % "0.25.0" % "test",
-      "io.netty" % "netty-handler" % "4.1.0.Beta6" % "test"
+      "io.reactivex" %% "rxscala" % "0.25.0" % "test"
     ))
     .settings(
       sourceGenerators in Compile <+= Def.task {
@@ -99,8 +97,7 @@ object MainBuild extends Build {
     .settings(libraryDependencies ++= commonDeps)
     .settings(libraryDependencies ++= Seq(
       Dependencies.awsCloudFormation,
-      "io.reactivex" %% "rxscala" % "0.25.0" % "test",
-      "io.netty" % "netty-handler" % "4.1.0.Beta6" % "test"
+      "io.reactivex" %% "rxscala" % "0.25.0" % "test"
     ))
     .settings(
       sourceGenerators in Compile <+= Def.task {
@@ -114,8 +111,7 @@ object MainBuild extends Build {
     .settings(libraryDependencies ++= commonDeps)
     .settings(libraryDependencies ++= Seq(
       Dependencies.awsCloudFront,
-      "io.reactivex" %% "rxscala" % "0.25.0" % "test",
-      "io.netty" % "netty-handler" % "4.1.0.Beta6" % "test"
+      "io.reactivex" %% "rxscala" % "0.25.0" % "test"
     ))
     .settings(
       sourceGenerators in Compile <+= Def.task {
@@ -129,8 +125,7 @@ object MainBuild extends Build {
     .settings(libraryDependencies ++= commonDeps)
     .settings(libraryDependencies ++= Seq(
       Dependencies.awsCloudSearch,
-      "io.reactivex" %% "rxscala" % "0.25.0" % "test",
-      "io.netty" % "netty-handler" % "4.1.0.Beta6" % "test"
+      "io.reactivex" %% "rxscala" % "0.25.0" % "test"
     ))
     .settings(
       sourceGenerators in Compile <+= Def.task {
@@ -145,8 +140,7 @@ object MainBuild extends Build {
     .settings(libraryDependencies ++= commonDeps)
     .settings(libraryDependencies ++= Seq(
       Dependencies.awsCloudSearchDomain,
-      "io.reactivex" %% "rxscala" % "0.25.0" % "test",
-      "io.netty" % "netty-handler" % "4.1.0.Beta6" % "test"
+      "io.reactivex" %% "rxscala" % "0.25.0" % "test"
     ))
     .settings(
       sourceGenerators in Compile <+= Def.task {
@@ -161,8 +155,7 @@ object MainBuild extends Build {
     .settings(libraryDependencies ++= commonDeps)
     .settings(libraryDependencies ++= Seq(
       Dependencies.awsCloudWatch,
-      "io.reactivex" %% "rxscala" % "0.25.0" % "test",
-      "io.netty" % "netty-handler" % "4.1.0.Beta6" % "test"
+      "io.reactivex" %% "rxscala" % "0.25.0" % "test"
     ))
     .settings(
       sourceGenerators in Compile <+= Def.task {
@@ -176,8 +169,7 @@ object MainBuild extends Build {
     .settings(libraryDependencies ++= commonDeps)
     .settings(libraryDependencies ++= Seq(
       Dependencies.awsCodeDeploy,
-      "io.reactivex" %% "rxscala" % "0.25.0" % "test",
-      "io.netty" % "netty-handler" % "4.1.0.Beta6" % "test"
+      "io.reactivex" %% "rxscala" % "0.25.0" % "test"
     ))
     .settings(
       sourceGenerators in Compile <+= Def.task {
@@ -191,8 +183,7 @@ object MainBuild extends Build {
     .settings(libraryDependencies ++= commonDeps)
     .settings(libraryDependencies ++= Seq(
       Dependencies.awsCognitoIdentity,
-      "io.reactivex" %% "rxscala" % "0.25.0" % "test",
-      "io.netty" % "netty-handler" % "4.1.0.Beta6" % "test"
+      "io.reactivex" %% "rxscala" % "0.25.0" % "test"
     ))
     .settings(
       sourceGenerators in Compile <+= Def.task {
@@ -206,8 +197,7 @@ object MainBuild extends Build {
     .settings(libraryDependencies ++= commonDeps)
     .settings(libraryDependencies ++= Seq(
       Dependencies.awsCognitoSync,
-      "io.reactivex" %% "rxscala" % "0.25.0" % "test",
-      "io.netty" % "netty-handler" % "4.1.0.Beta6" % "test"
+      "io.reactivex" %% "rxscala" % "0.25.0" % "test"
     ))
     .settings(
       sourceGenerators in Compile <+= Def.task {
@@ -221,8 +211,7 @@ object MainBuild extends Build {
     .settings(libraryDependencies ++= commonDeps)
     .settings(libraryDependencies ++= Seq(
       Dependencies.awsConfig,
-      "io.reactivex" %% "rxscala" % "0.25.0" % "test",
-      "io.netty" % "netty-handler" % "4.1.0.Beta6" % "test"
+      "io.reactivex" %% "rxscala" % "0.25.0" % "test"
     ))
     .settings(
       sourceGenerators in Compile <+= Def.task {
@@ -236,8 +225,7 @@ object MainBuild extends Build {
     .settings(libraryDependencies ++= commonDeps)
     .settings(libraryDependencies ++= Seq(
       Dependencies.awsDirectConnect,
-      "io.reactivex" %% "rxscala" % "0.25.0" % "test",
-      "io.netty" % "netty-handler" % "4.1.0.Beta6" % "test"
+      "io.reactivex" %% "rxscala" % "0.25.0" % "test"
     ))
     .settings(
       sourceGenerators in Compile <+= Def.task {
@@ -251,8 +239,7 @@ object MainBuild extends Build {
     .settings(libraryDependencies ++= commonDeps)
     .settings(libraryDependencies ++= Seq(
       Dependencies.awsDynamoDB,
-      "io.reactivex" %% "rxscala" % "0.25.0" % "test",
-      "io.netty" % "netty-handler" % "4.1.0.Beta6" % "test"
+      "io.reactivex" %% "rxscala" % "0.25.0" % "test"
     ))
     .settings(
       sourceGenerators in Compile <+= Def.task {
@@ -266,8 +253,7 @@ object MainBuild extends Build {
     .settings(libraryDependencies ++= commonDeps)
     .settings(libraryDependencies ++= Seq(
       Dependencies.awsEC2,
-      "io.reactivex" %% "rxscala" % "0.25.0" % "test",
-      "io.netty" % "netty-handler" % "4.1.0.Beta6" % "test"
+      "io.reactivex" %% "rxscala" % "0.25.0" % "test"
     ))
     .settings(
       sourceGenerators in Compile <+= Def.task {
@@ -281,8 +267,7 @@ object MainBuild extends Build {
     .settings(libraryDependencies ++= commonDeps)
     .settings(libraryDependencies ++= Seq(
       Dependencies.awsECS,
-      "io.reactivex" %% "rxscala" % "0.25.0" % "test",
-      "io.netty" % "netty-handler" % "4.1.0.Beta6" % "test"
+      "io.reactivex" %% "rxscala" % "0.25.0" % "test"
     ))
     .settings(
       sourceGenerators in Compile <+= Def.task {
@@ -296,8 +281,7 @@ object MainBuild extends Build {
     .settings(libraryDependencies ++= commonDeps)
     .settings(libraryDependencies ++= Seq(
       Dependencies.awsElasticache,
-      "io.reactivex" %% "rxscala" % "0.25.0" % "test",
-      "io.netty" % "netty-handler" % "4.1.0.Beta6" % "test"
+      "io.reactivex" %% "rxscala" % "0.25.0" % "test"
     ))
     .settings(
       sourceGenerators in Compile <+= Def.task {
@@ -311,8 +295,7 @@ object MainBuild extends Build {
     .settings(libraryDependencies ++= commonDeps)
     .settings(libraryDependencies ++= Seq(
       Dependencies.awsElasticLoadBalancing,
-      "io.reactivex" %% "rxscala" % "0.25.0" % "test",
-      "io.netty" % "netty-handler" % "4.1.0.Beta6" % "test"
+      "io.reactivex" %% "rxscala" % "0.25.0" % "test"
     ))
     .settings(
       sourceGenerators in Compile <+= Def.task {
@@ -326,8 +309,7 @@ object MainBuild extends Build {
     .settings(libraryDependencies ++= commonDeps)
     .settings(libraryDependencies ++= Seq(
       Dependencies.awsElasticMapReduce,
-      "io.reactivex" %% "rxscala" % "0.25.0" % "test",
-      "io.netty" % "netty-handler" % "4.1.0.Beta6" % "test"
+      "io.reactivex" %% "rxscala" % "0.25.0" % "test"
     ))
     .settings(
       sourceGenerators in Compile <+= Def.task {
@@ -341,8 +323,7 @@ object MainBuild extends Build {
     .settings(libraryDependencies ++= commonDeps)
     .settings(libraryDependencies ++= Seq(
       Dependencies.awsElasticTranscoder,
-      "io.reactivex" %% "rxscala" % "0.25.0" % "test",
-      "io.netty" % "netty-handler" % "4.1.0.Beta6" % "test"
+      "io.reactivex" %% "rxscala" % "0.25.0" % "test"
     ))
     .settings(
       sourceGenerators in Compile <+= Def.task {
@@ -356,8 +337,7 @@ object MainBuild extends Build {
     .settings(libraryDependencies ++= commonDeps)
     .settings(libraryDependencies ++= Seq(
       Dependencies.awsGlacier,
-      "io.reactivex" %% "rxscala" % "0.25.0" % "test",
-      "io.netty" % "netty-handler" % "4.1.0.Beta6" % "test"
+      "io.reactivex" %% "rxscala" % "0.25.0" % "test"
     ))
     .settings(
       sourceGenerators in Compile <+= Def.task {
@@ -371,8 +351,7 @@ object MainBuild extends Build {
     .settings(libraryDependencies ++= commonDeps)
     .settings(libraryDependencies ++= Seq(
       Dependencies.awsIdentityManagement,
-      "io.reactivex" %% "rxscala" % "0.25.0" % "test",
-      "io.netty" % "netty-handler" % "4.1.0.Beta6" % "test"
+      "io.reactivex" %% "rxscala" % "0.25.0" % "test"
     ))
     .settings(
       sourceGenerators in Compile <+= Def.task {
@@ -386,8 +365,7 @@ object MainBuild extends Build {
     .settings(libraryDependencies ++= commonDeps)
     .settings(libraryDependencies ++= Seq(
       Dependencies.awsImportExport,
-      "io.reactivex" %% "rxscala" % "0.25.0" % "test",
-      "io.netty" % "netty-handler" % "4.1.0.Beta6" % "test"
+      "io.reactivex" %% "rxscala" % "0.25.0" % "test"
     ))
     .settings(
       sourceGenerators in Compile <+= Def.task {
@@ -401,8 +379,7 @@ object MainBuild extends Build {
     .settings(libraryDependencies ++= commonDeps)
     .settings(libraryDependencies ++= Seq(
       Dependencies.awsKinesis,
-      "io.reactivex" %% "rxscala" % "0.25.0" % "test",
-      "io.netty" % "netty-handler" % "4.1.0.Beta6" % "test"
+      "io.reactivex" %% "rxscala" % "0.25.0" % "test"
     ))
     .settings(
       sourceGenerators in Compile <+= Def.task {
@@ -416,8 +393,7 @@ object MainBuild extends Build {
     .settings(libraryDependencies ++= commonDeps)
     .settings(libraryDependencies ++= Seq(
       Dependencies.awsRDS,
-      "io.reactivex" %% "rxscala" % "0.25.0" % "test",
-      "io.netty" % "netty-handler" % "4.1.0.Beta6" % "test"
+      "io.reactivex" %% "rxscala" % "0.25.0" % "test"
     ))
     .settings(
       sourceGenerators in Compile <+= Def.task {
@@ -431,8 +407,7 @@ object MainBuild extends Build {
     .settings(libraryDependencies ++= commonDeps)
     .settings(libraryDependencies ++= Seq(
       Dependencies.awsRedShift,
-      "io.reactivex" %% "rxscala" % "0.25.0" % "test",
-      "io.netty" % "netty-handler" % "4.1.0.Beta6" % "test"
+      "io.reactivex" %% "rxscala" % "0.25.0" % "test"
     ))
     .settings(
       sourceGenerators in Compile <+= Def.task {
@@ -446,8 +421,7 @@ object MainBuild extends Build {
     .settings(libraryDependencies ++= commonDeps)
     .settings(libraryDependencies ++= Seq(
       Dependencies.awsRoute53,
-      "io.reactivex" %% "rxscala" % "0.25.0" % "test",
-      "io.netty" % "netty-handler" % "4.1.0.Beta6" % "test"
+      "io.reactivex" %% "rxscala" % "0.25.0" % "test"
     ))
     .settings(
       sourceGenerators in Compile <+= Def.task {
@@ -462,8 +436,7 @@ object MainBuild extends Build {
     .settings(libraryDependencies ++= commonDeps)
     .settings(libraryDependencies ++= Seq(
       Dependencies.awsRoute53Domains,
-      "io.reactivex" %% "rxscala" % "0.25.0" % "test",
-      "io.netty" % "netty-handler" % "4.1.0.Beta6" % "test"
+      "io.reactivex" %% "rxscala" % "0.25.0" % "test"
     ))
     .settings(
       sourceGenerators in Compile <+= Def.task {
@@ -478,8 +451,7 @@ object MainBuild extends Build {
     .settings(libraryDependencies ++= commonDeps)
     .settings(libraryDependencies ++= Seq(
       Dependencies.awsS3,
-      "io.reactivex" %% "rxscala" % "0.25.0" % "test",
-      "io.netty" % "netty-handler" % "4.1.0.Beta6" % "test"
+      "io.reactivex" %% "rxscala" % "0.25.0" % "test"
     ))
     .settings(
       sourceGenerators in Compile <+= Def.task {
@@ -493,8 +465,7 @@ object MainBuild extends Build {
     .settings(libraryDependencies ++= commonDeps)
     .settings(libraryDependencies ++= Seq(
       Dependencies.awsS3Encryption,
-      "io.reactivex" %% "rxscala" % "0.25.0" % "test",
-      "io.netty" % "netty-handler" % "4.1.0.Beta6" % "test"
+      "io.reactivex" %% "rxscala" % "0.25.0" % "test"
     ))
     .settings(
       sourceGenerators in Compile <+= Def.task {
@@ -508,8 +479,7 @@ object MainBuild extends Build {
     .settings(libraryDependencies ++= commonDeps)
     .settings(libraryDependencies ++= Seq(
       Dependencies.awsSimpleDB,
-      "io.reactivex" %% "rxscala" % "0.25.0" % "test",
-      "io.netty" % "netty-handler" % "4.1.0.Beta6" % "test"
+      "io.reactivex" %% "rxscala" % "0.25.0" % "test"
     ))
     .settings(
       sourceGenerators in Compile <+= Def.task {
@@ -523,8 +493,7 @@ object MainBuild extends Build {
     .settings(libraryDependencies ++= commonDeps)
     .settings(libraryDependencies ++= Seq(
       Dependencies.awsSimpleEmailService,
-      "io.reactivex" %% "rxscala" % "0.25.0" % "test",
-      "io.netty" % "netty-handler" % "4.1.0.Beta6" % "test"
+      "io.reactivex" %% "rxscala" % "0.25.0" % "test"
     ))
     .settings(
       sourceGenerators in Compile <+= Def.task {
@@ -538,8 +507,7 @@ object MainBuild extends Build {
     .settings(libraryDependencies ++= commonDeps)
     .settings(libraryDependencies ++= Seq(
       Dependencies.awsSimpleWorkflow,
-      "io.reactivex" %% "rxscala" % "0.25.0" % "test",
-      "io.netty" % "netty-handler" % "4.1.0.Beta6" % "test"
+      "io.reactivex" %% "rxscala" % "0.25.0" % "test"
     ))
     .settings(
       sourceGenerators in Compile <+= Def.task {
@@ -553,8 +521,7 @@ object MainBuild extends Build {
     .settings(libraryDependencies ++= commonDeps)
     .settings(libraryDependencies ++= Seq(
       Dependencies.awsSNS,
-      "io.reactivex" %% "rxscala" % "0.25.0" % "test",
-      "io.netty" % "netty-handler" % "4.1.0.Beta6" % "test"
+      "io.reactivex" %% "rxscala" % "0.25.0" % "test"
     ))
     .settings(
       sourceGenerators in Compile <+= Def.task {
@@ -568,8 +535,7 @@ object MainBuild extends Build {
     .settings(libraryDependencies ++= commonDeps)
     .settings(libraryDependencies ++= Seq(
       Dependencies.awsSQS,
-      "io.reactivex" %% "rxscala" % "0.25.0" % "test",
-      "io.netty" % "netty-handler" % "4.1.0.Beta6" % "test"
+      "io.reactivex" %% "rxscala" % "0.25.0" % "test"
     ))
     .settings(
       sourceGenerators in Compile <+= Def.task {

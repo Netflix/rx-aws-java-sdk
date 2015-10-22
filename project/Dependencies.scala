@@ -8,7 +8,7 @@ object Dependencies {
     val karyon     = "2.2.0-rc.1"
     val ribbon     = "2.0.0"
     val rxj        = "1.0.14"
-    val rxnetty    = "0.4.12.9"
+    val rxnetty    = "0.4.13.10"
     val scala      = "2.11.7"
     val slf4j      = "1.7.10"
     val spectator  = "0.30.0"
