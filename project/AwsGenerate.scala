@@ -400,7 +400,7 @@ public class <<CLASSNAME>> extends AmazonRxNettyHttpClient implements <<IFACENAM
     pagination.map(p => s"request.${p.requestSetterName}(${p.strCast}null);").mkString("\n    ")
   }
   def mkTokenParameters(pagination: List[Pagination]): String = {
-    pagination.map(p => s"((request.${p.requestGetterName}() == null) ? null : request.${p.requestGetterName}().toString())").mkString(", ")
+    pagination.map(p => s"""((request.${p.requestGetterName}() == null || request.${p.requestGetterName}().equals(\"\")) ? null : request.${p.requestGetterName}().toString())""").mkString(", ")
   }
   def mkUpdatePagination(pagination: List[Pagination]): String = {
     pagination.map(p => s"        request.${p.requestSetterName}(result.${p.resultGetterName}());").mkString("\n")
