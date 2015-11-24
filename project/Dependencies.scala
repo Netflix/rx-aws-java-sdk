@@ -50,6 +50,7 @@ object Dependencies {
   val awsSimpleWorkflow       = "com.amazonaws" % "aws-java-sdk-simpleworkflow" % aws
   val awsSNS                  = "com.amazonaws" % "aws-java-sdk-sns" % aws
   val awsSQS                  = "com.amazonaws" % "aws-java-sdk-sqs" % aws
+  val awsSTS                  = "com.amazonaws" % "aws-java-sdk-sts" % aws
 
   val awsObjectMapper = "com.netflix.awsobjectmapper" % "awsobjectmapper" % awsMapper
   val equalsVerifier  = "nl.jqno.equalsverifier" % "equalsverifier" % "1.5.1"

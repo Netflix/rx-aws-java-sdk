@@ -57,6 +57,7 @@ object MainBuild extends Build {
       `rx-aws-java-sdk-simpleworkflow`,
       `rx-aws-java-sdk-sns`,
       `rx-aws-java-sdk-sqs`,
+      `rx-aws-java-sdk-sts`,
       `rx-aws-java-sdk`
     )
     .settings(buildSettings: _*)
@@ -543,6 +544,20 @@ object MainBuild extends Build {
       }
     )
 
+  lazy val `rx-aws-java-sdk-sts` = project
+    .dependsOn(`rx-aws-java-sdk-core`)
+    .settings(buildSettings: _*)
+    .settings(libraryDependencies ++= commonDeps)
+    .settings(libraryDependencies ++= Seq(
+      Dependencies.awsSTS,
+      "io.reactivex" %% "rxscala" % "0.25.0" % "test"
+    ))
+    .settings(
+      sourceGenerators in Compile <+= Def.task {
+        AwsGenerate.generate((sourceManaged in Compile).value, List("sts"))
+      }
+    )
+
   lazy val `rx-aws-java-sdk` = project
     .dependsOn(`rx-aws-java-sdk-autoscaling`)
     .dependsOn(`rx-aws-java-sdk-cloudformation`)
@@ -577,6 +592,7 @@ object MainBuild extends Build {
     .dependsOn(`rx-aws-java-sdk-simpleworkflow`)
     .dependsOn(`rx-aws-java-sdk-sns`)
     .dependsOn(`rx-aws-java-sdk-sqs`)
+    .dependsOn(`rx-aws-java-sdk-sts`)
     .settings(buildSettings: _*)
     .settings(libraryDependencies ++= commonDeps)
 
