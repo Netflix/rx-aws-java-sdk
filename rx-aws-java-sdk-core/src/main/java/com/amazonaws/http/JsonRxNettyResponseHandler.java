@@ -23,6 +23,7 @@ import java.io.ByteArrayOutputStream;
 import rx.Observable;
 import rx.functions.*;
 import io.netty.buffer.ByteBuf;
+import io.netty.util.ReferenceCountUtil;
 import iep.io.reactivex.netty.protocol.http.client.HttpClientResponse;
 
 public class JsonRxNettyResponseHandler<T> implements RxNettyResponseHandler<AmazonWebServiceResponse<T>> {
@@ -58,6 +59,9 @@ public class JsonRxNettyResponseHandler<T> implements RxNettyResponseHandler<Ama
           }
           catch (java.io.IOException e) {
             throw new RuntimeException(e);
+          }
+          finally {
+            ReferenceCountUtil.safeRelease(bb);
           }
         })
       .observeOn(RxSchedulers.computation())

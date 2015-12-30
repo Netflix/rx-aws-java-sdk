@@ -27,6 +27,7 @@ import com.amazonaws.util.RxSchedulers;
 
 import rx.Observable;
 import io.netty.buffer.ByteBuf;
+import io.netty.util.ReferenceCountUtil;
 import iep.io.reactivex.netty.protocol.http.client.HttpClientResponse;
 
 public class JsonRxNettyErrorResponseHandler implements RxNettyResponseHandler<AmazonServiceException> {
@@ -63,6 +64,9 @@ public class JsonRxNettyErrorResponseHandler implements RxNettyResponseHandler<A
           }
           catch (java.io.IOException e) {
             throw new RuntimeException(e);
+          }
+          finally {
+            ReferenceCountUtil.safeRelease(bb);
           }
         }
       )

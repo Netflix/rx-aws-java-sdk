@@ -34,6 +34,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import rx.Observable;
 import io.netty.buffer.ByteBuf;
+import io.netty.util.ReferenceCountUtil;
 import iep.io.reactivex.netty.protocol.http.client.HttpClientResponse;
 
 public class JsonRxNettyErrorResponseHandlerV2 implements RxNettyResponseHandler<AmazonServiceException> {
@@ -73,6 +74,9 @@ public class JsonRxNettyErrorResponseHandlerV2 implements RxNettyResponseHandler
           }
           catch (java.io.IOException e) {
             throw new RuntimeException(e);
+          }
+          finally {
+            ReferenceCountUtil.safeRelease(bb);
           }
         }
       )

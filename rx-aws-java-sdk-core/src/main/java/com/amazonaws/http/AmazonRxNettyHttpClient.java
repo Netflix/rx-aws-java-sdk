@@ -68,12 +68,6 @@ import java.security.MessageDigest;
 
 abstract public class AmazonRxNettyHttpClient extends AmazonWebServiceClient {
 
-/**
-  private static final String HMAC_SHA_256 = "HmacSHA256";
-  private static final String SHA_256 = "SHA-256";
-  private static final Mac MAC_HMAC_SHA_256;
-  private static final MessageDigest MESSAGE_DIGEST_SHA_256;
-*/
   private static final Map<String,HttpClient<ByteBuf,ByteBuf>> CLIENTS =
     new ConcurrentHashMap<String,HttpClient<ByteBuf,ByteBuf>>();
 
@@ -85,18 +79,6 @@ abstract public class AmazonRxNettyHttpClient extends AmazonWebServiceClient {
     else
       return null;
   }
-
-/**
-  static {
-    try {
-      MAC_HMAC_SHA_256 = Mac.getInstance(HMAC_SHA_256);
-      MESSAGE_DIGEST_SHA_256 = MessageDigest.getInstance(SHA_256);
-    }
-    catch (java.security.NoSuchAlgorithmException e) {
-      throw new RuntimeException(e);
-    }
-  }
-*/
 
   static {
     SignerFactory.registerSigner("AWS4SignerType", RxAWS4Signer.class);
@@ -126,52 +108,6 @@ abstract public class AmazonRxNettyHttpClient extends AmazonWebServiceClient {
   }
 
   abstract protected void init();
-
-/**
-  private byte[] hmacSHA256(String data, byte[] key) {
-    try {
-      Mac mac = (Mac) MAC_HMAC_SHA_256.clone();
-      mac.init(new SecretKeySpec(key, HMAC_SHA_256));
-      return mac.doFinal(data.getBytes("UTF8"));
-    }
-    catch (java.lang.CloneNotSupportedException e) {
-      throw new RuntimeException(e);
-    }
-    catch (java.security.InvalidKeyException e) {
-      throw new RuntimeException(e);
-    }
-    catch (java.io.UnsupportedEncodingException e) {
-      throw new RuntimeException(e);
-    }
-  }
-
-  private byte[] getSignatureKey(String key, String dateStamp, String region, String service) {
-    try {
-      byte[] kSecret = ("AWS4" + key).getBytes("UTF8");
-      byte[] kDate    = hmacSHA256(dateStamp, kSecret);
-      byte[] kRegion  = hmacSHA256(region, kDate);
-      byte[] kService = hmacSHA256(service, kRegion);
-      return hmacSHA256("aws4_request", kService);
-    }
-    catch (java.io.UnsupportedEncodingException e) {
-      throw new RuntimeException(e);
-    }
-  }
-
-  private String hexString(byte[] data) {
-    return DatatypeConverter.printHexBinary(data).toLowerCase();
-  }
-
-  private String computeSHA256(String input) {
-    try {
-      MessageDigest messageDigest = (MessageDigest) MESSAGE_DIGEST_SHA_256.clone();
-      return hexString(messageDigest.digest(input.getBytes()));
-    }
-    catch (java.lang.CloneNotSupportedException e) {
-      throw new RuntimeException(e);
-    }
-  }
-*/
 
   private <Y> Observable<Long> getBackoffStrategyDelay(Request<Y> request, int cnt, AmazonClientException error) {
       if (cnt == 0) return Observable.just(0L);
@@ -456,6 +392,7 @@ abstract public class AmazonRxNettyHttpClient extends AmazonWebServiceClient {
       HttpClientConfig config = new HttpClient.HttpClientConfig.Builder()
         .setFollowRedirect(true)
         .readTimeout(clientConfiguration.getSocketTimeout(), TimeUnit.MILLISECONDS)
+        .responseSubscriptionTimeout(5000, TimeUnit.MILLISECONDS)
         .build();
 
       HttpClient<ByteBuf,ByteBuf> client = RxNetty.<ByteBuf,ByteBuf>newHttpClientBuilder(host, port)
@@ -474,6 +411,7 @@ abstract public class AmazonRxNettyHttpClient extends AmazonWebServiceClient {
         .appendPipelineConfigurator(
           pipeline -> pipeline.addLast(new ActiveLifeTracker(clientConfiguration.getConnectionTTL()))
         )
+        .disableAutoReleaseBuffers()
         .build();
       CLIENTS.putIfAbsent(key, client);
     }

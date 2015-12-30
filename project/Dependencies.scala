@@ -4,14 +4,11 @@ object Dependencies {
   object Versions {
     val aws        = "1.10.27"
     val awsMapper  = "1.10.27.0"
-    val guice      = "4.0-beta5"
-    val karyon     = "2.2.0-rc.1"
-    val ribbon     = "2.0.0"
-    val rxj        = "1.0.14"
-    val rxnetty    = "0.4.13.10"
+    val rxj        = "1.0.17"
+    val rxnetty    = "0.4.15.14"
     val scala      = "2.11.7"
     val slf4j      = "1.7.10"
-    val spectator  = "0.30.0"
+    val spectator  = "0.33.0"
   }
 
   import Versions._
@@ -57,22 +54,11 @@ object Dependencies {
   val eureka          = "com.netflix.eureka" % "eureka-client" % "1.1.150"
   val governator      = "com.netflix.governator" % "governator" % "1.3.3"
   val guava           = "com.google.guava" % "guava" % "18.0"
-  val guiceAssist     = "com.google.inject.extensions" % "guice-assistedinject" % guice
-  val guiceCore       = "com.google.inject" % "guice" % guice
-  val guiceGrapher    = "com.google.inject.extensions" % "guice-grapher" % guice
-  val guiceMulti      = "com.google.inject.extensions" % "guice-multibindings" % guice
-  val guiceServlet    = "com.google.inject.extensions" % "guice-servlet" % guice
   val inject          = "javax.inject" % "javax.inject" % "1"
   val jodaTime        = "joda-time" % "joda-time" % "2.5"
-  val karyonAdmin     = "com.netflix.karyon" % "karyon2-admin-web" % karyon
-  val karyonCore      = "com.netflix.karyon" % "karyon2-core" % karyon
   val junit           = "junit" % "junit" % "4.10"
   val junitInterface  = "com.novocode" % "junit-interface" % "0.11"
   val jzlib           = "com.jcraft" % "jzlib" % "1.1.3"
-  val ribbonCore      = "com.netflix.ribbon" % "ribbon-core" % ribbon
-  val ribbonEureka    = "com.netflix.ribbon" % "ribbon-eureka" % ribbon
-  val ribbonHttp      = "com.netflix.ribbon" % "ribbon-httpclient" % ribbon
-  val ribbonLb        = "com.netflix.ribbon" % "ribbon-loadbalancer" % ribbon
   val rxjava          = "io.reactivex" % "rxjava" % rxj
   val rxnettyCore     = "com.netflix.iep-shadow" % "iepshadow-rxnetty" % rxnetty
   val rxnettyCtxts    = "com.netflix.iep-shadow" % "iepshadow-rxnetty-contexts" % rxnetty
