@@ -1,20 +1,24 @@
 import sbt._
 import sbt.Keys._
-import com.typesafe.sbt.pgp.PgpKeys._
 
 object MainBuild extends Build {
 
   lazy val baseSettings =
     sbtrelease.ReleasePlugin.releaseSettings ++
-    Sonatype.settings ++
+    GitVersion.settings ++
+    Bintray.settings ++
     net.virtualvoid.sbt.graph.Plugin.graphSettings ++
     scoverage.ScoverageSbtPlugin.projectSettings
 
   lazy val buildSettings = baseSettings ++ Seq(
             organization := BuildSettings.organization,
             scalaVersion := Dependencies.Versions.scala,
+           scalacOptions ++= BuildSettings.compilerFlags,
+            javacOptions ++= BuildSettings.javaCompilerFlags,
+     javacOptions in doc := BuildSettings.javadocFlags,
               crossPaths := false,
            sourcesInBase := false,
+            fork in Test := true,
         autoScalaLibrary := false,
        externalResolvers := BuildSettings.resolvers,
      checkLicenseHeaders := License.checkLicenseHeaders(streams.value.log, sourceDirectory.value),
