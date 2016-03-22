@@ -4,11 +4,11 @@ object Dependencies {
   object Versions {
     val aws        = "1.10.27"
     val awsMapper  = "1.10.27.0"
-    val rxj        = "1.0.17"
-    val rxnetty    = "0.4.15.15"
+    val rxj        = "1.1.1"
+    val rxnetty    = "0.4.15.22"
     val scala      = "2.11.7"
-    val slf4j      = "1.7.10"
-    val spectator  = "0.33.0"
+    val slf4j      = "1.7.18"
+    val spectator  = "0.35.0"
   }
 
   import Versions._
