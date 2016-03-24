@@ -29,6 +29,9 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import rx.Observable;
 import rx.schedulers.Schedulers;
 
@@ -82,6 +85,8 @@ import java.security.MessageDigest;
 
 
 abstract public class AmazonRxNettyHttpClient extends AmazonWebServiceClient {
+
+  private static final Logger LOGGER = LoggerFactory.getLogger(AmazonRxNettyHttpClient.class);
 
   private static final Map<String,HttpClient<ByteBuf,ByteBuf>> CLIENTS =
     new ConcurrentHashMap<String,HttpClient<ByteBuf,ByteBuf>>();
@@ -209,17 +214,14 @@ abstract public class AmazonRxNettyHttpClient extends AmazonWebServiceClient {
             )
           ) {
             return Observable.defer(() -> {
-              if (isPrepared) return Observable.just(null);
-              return  prepareRequest(request, executionContext);
+              request.setParameters(originalParameters);
+              request.setHeaders(originalHeaders);
+              request.setContent(originalContent);
+              return prepareRequest(request, executionContext);
             })
             .flatMap(v -> { return getBackoffStrategyDelay(request, cnt.get(), error.get()); })
             .flatMap(i -> {
               try {
-                if (isPrepared) {
-                  request.setParameters(originalParameters);
-                  request.setHeaders(originalHeaders);
-                  request.setContent(originalContent);
-                }
                 return invokeImpl(request, responseHandler, errorResponseHandler, executionContext);
               }
               catch (java.io.UnsupportedEncodingException e) {
@@ -414,6 +416,7 @@ abstract public class AmazonRxNettyHttpClient extends AmazonWebServiceClient {
         .withName(host + "." + port)
         .config(config)
         .channelOption(ChannelOption.CONNECT_TIMEOUT_MILLIS, clientConfiguration.getConnectionTimeout())
+        //.enableWireLogging(io.netty.handler.logging.LogLevel.ERROR)
         .withMaxConnections(clientConfiguration.getMaxConnections())
         .withIdleConnectionsTimeoutMillis(60000)
         .withSslEngineFactory((isSecure) ? DefaultFactories.trustAll() : null)
