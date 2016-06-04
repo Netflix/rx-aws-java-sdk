@@ -15,30 +15,27 @@
  */
 package com.amazonaws.http;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.InputStream;
-import java.util.Map;
-import java.util.HashMap;
-
-import javax.xml.stream.XMLEventReader;
-import javax.xml.stream.XMLInputFactory;
-import javax.xml.stream.XMLStreamException;
-
-import rx.Observable;
-import rx.functions.*;
-import io.netty.buffer.ByteBuf;
-import iep.io.reactivex.netty.protocol.http.client.HttpClientResponse;
-
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-
 import com.amazonaws.AmazonWebServiceResponse;
 import com.amazonaws.ResponseMetadata;
 import com.amazonaws.transform.StaxUnmarshallerContext;
 import com.amazonaws.transform.Unmarshaller;
 import com.amazonaws.transform.VoidStaxUnmarshaller;
 import com.amazonaws.util.RxSchedulers;
+import iep.io.reactivex.netty.protocol.http.client.HttpClientResponse;
+import io.netty.buffer.ByteBuf;
+import io.netty.util.ReferenceCountUtil;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import rx.Observable;
+import rx.functions.Func2;
+
+import javax.xml.stream.XMLEventReader;
+import javax.xml.stream.XMLInputFactory;
+import javax.xml.stream.XMLStreamException;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Default implementation of HttpResponseHandler that handles a successful
@@ -94,6 +91,8 @@ public class StaxRxNettyResponseHandler<T> implements RxNettyResponseHandler<Ama
             }
             catch (java.io.IOException e) {
               throw new RuntimeException(e);
+            } finally {
+                ReferenceCountUtil.safeRelease (bb);
             }
           }
         }
