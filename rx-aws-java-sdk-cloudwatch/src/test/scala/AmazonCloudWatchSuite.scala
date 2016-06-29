@@ -33,7 +33,7 @@ class AmazonCloudWatchSuite extends FunSuite with BeforeAndAfterAll {
   override def afterAll() {
   }
 
-  test("describeAlarms") {
+  ignore("describeAlarms") {
     val r = toScalaObservable(client.describeAlarms).toBlocking.toList
     assert(r.size == 1)
   }

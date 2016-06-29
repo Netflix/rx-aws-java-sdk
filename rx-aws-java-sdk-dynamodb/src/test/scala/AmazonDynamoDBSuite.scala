@@ -35,12 +35,12 @@ class AmazonDynamoDBSuite extends FunSuite with BeforeAndAfterAll {
   override def afterAll() {
   }
 
-  test("listTables") {
+  ignore("listTables") {
     val r = toScalaObservable(db.listTables()).toBlocking.toList
     assert(r.size == 1)
   }
 
-  test("describeTable - error") {
+  ignore("describeTable - error") {
     val table = "does_not_exist"
     val req = new DescribeTableRequest().withTableName(table)
     intercept[ResourceNotFoundException] {

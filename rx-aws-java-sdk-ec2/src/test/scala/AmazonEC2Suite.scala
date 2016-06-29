@@ -33,7 +33,7 @@ class AmazonEC2Suite extends FunSuite with BeforeAndAfterAll {
   override def afterAll() {
   }
 
-  test("describeVpc") {
+  ignore("describeVpc") {
     val r = toScalaObservable(ec2.describeVpcs).toBlocking.toList
     assert(r.size == 1)
   }

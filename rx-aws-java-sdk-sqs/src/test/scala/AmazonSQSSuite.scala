@@ -48,12 +48,12 @@ class AmazonSQSSuite extends FunSuite with BeforeAndAfterAll {
     new AmazonSQSClient(creds).listQueues
   }
 
-  test("describeQueues") {
+  ignore("describeQueues") {
     val r = toScalaObservable(client.listQueues).toBlocking.toList
     assert(r.size == 1)
   }
 
-  test(s"createQueue - ${queueName}") {
+  ignore(s"createQueue - ${queueName}") {
     val r = toScalaObservable(
       client.createQueue(new CreateQueueRequest().withQueueName(queueName))
     ).toBlocking.toList
@@ -62,7 +62,7 @@ class AmazonSQSSuite extends FunSuite with BeforeAndAfterAll {
     assert(Option(queueUrl.get).isDefined)
   }
 
-  test(s"sendMessage - ${queueName}") {
+  ignore(s"sendMessage - ${queueName}") {
     val r = toScalaObservable(
       client.sendMessage(
         new SendMessageRequest().withQueueUrl(queueUrl.get).withMessageBody(testMessage)
@@ -71,7 +71,7 @@ class AmazonSQSSuite extends FunSuite with BeforeAndAfterAll {
     assert(r.size == 1)
   }
 
-  test(s"receiveMessage - ${queueName}") {
+  ignore(s"receiveMessage - ${queueName}") {
     val r = toScalaObservable(
       client.receiveMessage(
         new ReceiveMessageRequest().withQueueUrl(queueUrl.get)
@@ -83,7 +83,7 @@ class AmazonSQSSuite extends FunSuite with BeforeAndAfterAll {
     receiptHandle.set(r.head.result.getMessages.head.getReceiptHandle)
   }
 
-  test(s"deleteMessage - ${queueName}") {
+  ignore(s"deleteMessage - ${queueName}") {
     val r = toScalaObservable(
       client.deleteMessage(
         new DeleteMessageRequest().withQueueUrl(queueUrl.get).withReceiptHandle(receiptHandle.get)
@@ -92,7 +92,7 @@ class AmazonSQSSuite extends FunSuite with BeforeAndAfterAll {
     assert(r.size == 1)
   }
 
-  test(s"deleteQueue - ${queueName}") {
+  ignore(s"deleteQueue - ${queueName}") {
     val r = toScalaObservable(
       client.deleteQueue(new DeleteQueueRequest().withQueueUrl(queueUrl.get))
     ).toBlocking.toList

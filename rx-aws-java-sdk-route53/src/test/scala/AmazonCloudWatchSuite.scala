@@ -33,12 +33,12 @@ class AmazonRoute53Suite extends FunSuite with BeforeAndAfterAll {
   override def afterAll() {
   }
 
-  test("listHostedZones") {
+  ignore("listHostedZones") {
     val r = toScalaObservable(client.listHostedZones).toBlocking.toList
     assert(r.size == 1)
   }
 
-  test("listResourceRecordSets") {
+  ignore("listResourceRecordSets") {
     val r = toScalaObservable(client.listResourceRecordSets).toBlocking.toList
     assert(r.size == 1)
   }
