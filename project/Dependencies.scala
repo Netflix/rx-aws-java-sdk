@@ -4,11 +4,11 @@ object Dependencies {
   object Versions {
     val aws        = "1.10.27"
     val awsMapper  = "1.10.27.0"
-    val rxj        = "1.1.1"
-    val rxnetty    = "0.4.15.22"
-    val scala      = "2.11.7"
-    val slf4j      = "1.7.18"
-    val spectator  = "0.35.0"
+    val rxj        = "1.2.1"
+    val rxnetty    = "0.4.18.28"
+    val scala      = "2.11.8"
+    val slf4j      = "1.7.21"
+    val spectator  = "0.42.0"
   }
 
   import Versions._
@@ -50,12 +50,8 @@ object Dependencies {
   val awsSTS                  = "com.amazonaws" % "aws-java-sdk-sts" % aws
 
   val awsObjectMapper = "com.netflix.awsobjectmapper" % "awsobjectmapper" % awsMapper
-  val equalsVerifier  = "nl.jqno.equalsverifier" % "equalsverifier" % "1.5.1"
-  val eureka          = "com.netflix.eureka" % "eureka-client" % "1.1.150"
-  val governator      = "com.netflix.governator" % "governator" % "1.3.3"
   val guava           = "com.google.guava" % "guava" % "18.0"
   val inject          = "javax.inject" % "javax.inject" % "1"
-  val jodaTime        = "joda-time" % "joda-time" % "2.5"
   val junit           = "junit" % "junit" % "4.10"
   val junitInterface  = "com.novocode" % "junit-interface" % "0.11"
   val jzlib           = "com.jcraft" % "jzlib" % "1.1.3"
@@ -66,7 +62,6 @@ object Dependencies {
   val scalaLibrary    = "org.scala-lang" % "scala-library" % scala
   val scalaLibraryAll = "org.scala-lang" % "scala-library-all" % scala
   val scalaLogging    = "com.typesafe.scala-logging" % "scala-logging_2.11" % "3.1.0"
-  val scalaParsec     = "org.scala-lang.modules" % "scala-parser-combinators_2.11" % "1.0.2"
   val scalaReflect    = "org.scala-lang" % "scala-reflect" % scala
   val scalatest       = "org.scalatest" % "scalatest_2.11" % "2.2.1"
   val slf4jApi        = "org.slf4j" % "slf4j-api" % slf4j
