@@ -162,7 +162,6 @@ class RxURLEncodedUtils {
      */
     private static final BitSet RESERVED     = new BitSet(256);
 
-
     /**
      * Safe characters for x-www-form-urlencoded data, as per java.net.URLEncoder and browser behaviour,
      * i.e. alphanumeric plus {@code "-", "_", ".", "*"}

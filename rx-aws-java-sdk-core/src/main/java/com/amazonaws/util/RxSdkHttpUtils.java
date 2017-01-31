@@ -175,7 +175,7 @@ public class RxSdkHttpUtils {
      * @param escapeDoubleSlash Whether double-slash in the path should be escaped to "/%2F"
      * @return The baseUri with the (encoded) path appended
      */
-    public static String appendUri(final String baseUri, String path, final boolean escapeDoubleSlash ) {
+    public static String appendUri(final String baseUri, String path, final boolean escapeDoubleSlash) {
         String resultUri = baseUri;
         if (path != null && path.length() > 0) {
             if (path.startsWith("/")) {
