@@ -83,7 +83,6 @@ public class EventLoopsScheduler extends Scheduler {
 
         EventLoopWorker(PoolWorker poolWorker) {
             this.poolWorker = poolWorker;
-            
         }
 
         @Override
